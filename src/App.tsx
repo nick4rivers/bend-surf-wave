@@ -7,6 +7,7 @@ import { HydroNetworkGraph } from "./components/HydroNetworkGraph";
 import { HistoricalGraph } from "./components/HistoricalGraph";
 import { CamsAndWeather } from "./components/CamsAndWeather";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
+import { getSurfReport } from "./services/riverDataService";
 import { Waves, RefreshCw, AlertCircle } from "lucide-react";
 
 export default function App() {
@@ -20,12 +21,8 @@ export default function App() {
     if (showSpinner) setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/surf-data");
-      if (!res.ok) {
-        throw new Error(`Failed to fetch surf data (Status: ${res.status})`);
-      }
-      const json: SurfDataResponse = await res.json();
-      setData(json);
+      const dataPayload = await getSurfReport();
+      setData(dataPayload);
     } catch (err: any) {
       console.error("Error fetching surf data:", err);
       setError(err.message || "Failed to load river surf report data.");
