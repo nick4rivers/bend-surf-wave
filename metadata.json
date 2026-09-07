@@ -1,0 +1,7 @@
+{
+  "name": "Bend Surf Wave",
+  "description": "Live river flow (CFS), water & air temperature, surfability status, webcam, and hydrographs for Bend Whitewater Park Surf Wave.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
