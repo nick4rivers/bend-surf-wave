@@ -19,6 +19,16 @@ interface CamsAndWeatherProps {
 
 export const CamsAndWeather: React.FC<CamsAndWeatherProps> = ({ data, unit }) => {
   const weather = data.weather;
+  const primaryCam = data.webcams?.[0];
+  const rawEmbedUrl = primaryCam?.embedUrl || "https://www.youtube.com/embed/r_HxcmGwYNA";
+  const embedUrl = rawEmbedUrl.includes("?")
+    ? rawEmbedUrl
+    : `${rawEmbedUrl}?autoplay=0&mute=1`;
+
+  const videoIdMatch = rawEmbedUrl.match(/embed\/([^?&]+)/);
+  const liveWatchUrl = videoIdMatch
+    ? `https://www.youtube.com/live/${videoIdMatch[1]}`
+    : "https://www.youtube.com/live/r_HxcmGwYNA";
 
   const formatTemp = (tempF: number | null | undefined) => {
     if (typeof tempF !== "number" || isNaN(tempF)) return "--";
@@ -53,7 +63,7 @@ export const CamsAndWeather: React.FC<CamsAndWeatherProps> = ({ data, unit }) =>
         <div className="mt-4">
           <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
             <iframe
-              src="https://www.youtube.com/embed/uBqGtbSNzu8?autoplay=0&mute=1"
+              src={embedUrl}
               title="Bend Whitewater Park Live Stream - The Bend Bulletin"
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -68,7 +78,7 @@ export const CamsAndWeather: React.FC<CamsAndWeatherProps> = ({ data, unit }) =>
             </div>
 
             <a
-              href="https://www.youtube.com/live/uBqGtbSNzu8?si=z8h6pRlwJXdI7ov7"
+              href={liveWatchUrl}
               target="_blank"
               rel="noreferrer"
               className="text-sky-600 hover:text-sky-700 font-semibold flex items-center gap-1 transition"
