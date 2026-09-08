@@ -6,6 +6,7 @@ import { TempGraph } from "./components/TempGraph";
 import { HydroNetworkGraph } from "./components/HydroNetworkGraph";
 import { HistoricalGraph } from "./components/HistoricalGraph";
 import { CamsAndWeather } from "./components/CamsAndWeather";
+import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
 import { getSurfReport } from "./services/riverDataService";
 import { Waves, RefreshCw, AlertCircle } from "lucide-react";
@@ -100,7 +101,10 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 sm:space-y-8">
+        {/* Domain Migration Banner (only rendered on non-production/preview hostnames) */}
+        <DomainMigrationBanner />
+
         {activeTab === "overview" && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <MetricCards
@@ -114,25 +118,7 @@ export default function App() {
 
             {/* Flow & Temperature chart sections stacked full-width */}
             <div className="flex flex-col gap-6">
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Waves className="w-4 h-4 text-sky-600" />
-                    <h3 className="font-bold text-slate-900 text-base">
-                      Recent Flow Trend (CFS)
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab("flow")}
-                    className="text-xs text-sky-600 hover:text-sky-700 font-semibold flex items-center gap-1"
-                  >
-                    Full Hydrograph &rarr;
-                  </button>
-                </div>
-                <div className="py-2">
-                  <FlowGraph data={data} unit={unit} />
-                </div>
-              </div>
+              <FlowGraph data={data} unit={unit} />
 
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">

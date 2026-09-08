@@ -9,7 +9,7 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from "recharts";
-import { Waves, Calendar, Download, Eye, TrendingUp, Maximize2 } from "lucide-react";
+import { Waves, Calendar, Eye, TrendingUp, Maximize2 } from "lucide-react";
 import { SurfDataResponse, TimeRange, UnitType } from "../types";
 import { formatHydroDateTime } from "../utils/dateUtils";
 
@@ -82,32 +82,6 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
     return { min, max, avg, current };
   }, [filteredData]);
 
-  // Export current view data as CSV
-  const handleExportCSV = () => {
-    const headers = "Date,CFS,M3_per_sec,Status\n";
-    const rows = filteredData
-      .map((d) => {
-        const status =
-          d.cfs >= 800
-            ? "FIRING"
-            : d.cfs >= 650
-            ? "SURFING"
-            : d.cfs >= 550
-            ? "LOW-SURFABLE"
-            : "BELOW MINIMUM";
-        return `"${d.date}",${d.cfs},${(d.cfs * 0.0283).toFixed(2)},"${status}"`;
-      })
-      .join("\n");
-    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Bend_Surf_Wave_Flow_${timeRange}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // Custom Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -162,7 +136,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
             <div className="flex items-center gap-2">
               <Waves className="w-5 h-5 text-sky-600" />
               <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
-                Bend Surf Wave Cubic Feet Per Second (CFS)
+                Bend Surf Wave Current Flow (CFS)
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -170,7 +144,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
             </p>
           </div>
 
-          {/* Time Range Filter Buttons & CSV Export */}
+          {/* Time Range Filter Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex bg-slate-100 border border-slate-200 rounded-lg p-1 text-xs">
               {(["7d", "30d", "all"] as TimeRange[]).map((r) => (
@@ -201,16 +175,6 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
             >
               <Eye className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Thresholds</span>
-            </button>
-
-            <button
-              id="export-flow-csv-btn"
-              onClick={handleExportCSV}
-              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white border border-slate-800 text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
-              title="Download raw flow CSV data"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Export CSV</span>
             </button>
           </div>
         </div>
