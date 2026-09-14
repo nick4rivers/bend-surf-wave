@@ -352,6 +352,14 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
         isLive: true,
       },
     ],
+    wickiupStorage: {
+      currentAcreFeet: 35575,
+      capacityAcreFeet: 200000,
+      percentOfCapacity: 17.8,
+      lastUpdated: new Date().toISOString().replace("T", " ").substring(0, 16),
+      change7d: -4646,
+      history: [],
+    },
   };
 }
 

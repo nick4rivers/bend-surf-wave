@@ -132,6 +132,17 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     return cache[cacheKey].data;
   }
 
+  // Compute date range for 1-year daily USBR Hydromet archive
+  const nowObj = new Date();
+  const eyer = nowObj.getFullYear();
+  const emn = nowObj.getMonth() + 1;
+  const edy = nowObj.getDate();
+  const past1YrObj = new Date(nowObj.getTime() - 366 * 24 * 60 * 60 * 1000);
+  const syer = past1YrObj.getFullYear();
+  const smn = past1YrObj.getMonth() + 1;
+  const sdy = past1YrObj.getDate();
+  const usbr1YrDailyUrl = `https://www.usbr.gov/pn-bin/webarccsv.pl?parameter=wic%20af&syer=${syer}&smn=${smn}&sdy=${sdy}&eyer=${eyer}&emn=${emn}&edy=${edy}&format=2`;
+
   // Parallel fetch from data sources
   const [
     greenwaveYearCsv,
@@ -144,6 +155,8 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     purpleAirMapJson,
     openMeteoAirJson,
     usbrBenoWfHtml,
+    usbrWicAfCsv,
+    usbrWic1YrCsv,
   ] = await Promise.allSettled([
     fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/GREENWAVE_Year.csv"),
     fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/BENOWaterAirTemp.csv"),
@@ -157,6 +170,8 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       : fetchUrl("https://map.purpleair.com/data.json?opt=1/m/i/pm25_10m/a10/c0&box=44.00,-121.36,44.10,-121.26"),
     fetchUrl("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles"),
     fetchUrl("https://www.usbr.gov/pn-bin/v1/instant.pl?list=beno%20wf&back=480&format=dfcgi"),
+    fetchUrl("https://www.usbr.gov/pn-bin/v1/instant.pl?list=wic%20af&format=realtime-graph"),
+    fetchUrl(usbr1YrDailyUrl),
   ]);
 
   // Parse Weather from Open-Meteo (Bend, Oregon in America/Los_Angeles local time)
@@ -293,6 +308,103 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
         benoRealWaterList.push({ date: dtStr, waterTemp: fahrenheit });
       }
     }
+  }
+
+  // Parse USBR Hydromet Wickiup Reservoir Storage (WIC AF)
+  const WICKIUP_CAPACITY_AF = 200000;
+  let wickiupStorage: any = undefined;
+
+  let currentAf = 35575;
+  let lastUpdatedStr = "2026-09-14 08:15";
+  let percentCapacity = 17.8;
+
+  // Extract current reading from real-time 15-min instant graph if available
+  if (usbrWicAfCsv.status === "fulfilled" && usbrWicAfCsv.value) {
+    try {
+      const lines = usbrWicAfCsv.value.trim().split(/\r?\n/);
+      for (let i = lines.length - 1; i >= 1; i--) {
+        const parts = lines[i].split(",");
+        if (parts.length >= 2) {
+          const dateRaw = parts[0].trim();
+          const afVal = parseFloat(parts[1].trim());
+          if (!isNaN(afVal) && dateRaw) {
+            currentAf = Math.round(afVal);
+            percentCapacity = parseFloat(((currentAf / WICKIUP_CAPACITY_AF) * 100).toFixed(1));
+            lastUpdatedStr = dateRaw.replace(/\//g, "-");
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error reading latest 15min WIC AF:", e);
+    }
+  }
+
+  // Parse 1-year daily history from USBR webarccsv
+  const dailyHistory: Array<{
+    date: string;
+    timestamp: number;
+    acreFeet: number;
+    percent: number;
+  }> = [];
+
+  if (usbrWic1YrCsv.status === "fulfilled" && usbrWic1YrCsv.value) {
+    try {
+      const lines = usbrWic1YrCsv.value.split(/\r?\n/);
+      for (const line of lines) {
+        const match = line.trim().match(/^(\d{2})\/(\d{2})\/(\d{4}),\s*([0-9.]+)/);
+        if (match) {
+          const month = match[1];
+          const day = match[2];
+          const year = match[3];
+          const af = parseFloat(match[4]);
+          if (!isNaN(af)) {
+            const isoDate = `${year}-${month}-${day}`;
+            const roundedAf = Math.round(af);
+            dailyHistory.push({
+              date: isoDate,
+              timestamp: new Date(isoDate).getTime(),
+              acreFeet: roundedAf,
+              percent: parseFloat(((roundedAf / WICKIUP_CAPACITY_AF) * 100).toFixed(1)),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error parsing USBR 1-year daily Wickiup data:", err);
+    }
+  }
+
+  // If dailyHistory has items, ensure today's latest reading is included
+  if (dailyHistory.length > 0) {
+    const lastDaily = dailyHistory[dailyHistory.length - 1];
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (lastDaily.date !== todayIso) {
+      dailyHistory.push({
+        date: todayIso,
+        timestamp: Date.now(),
+        acreFeet: currentAf,
+        percent: percentCapacity,
+      });
+    }
+
+    wickiupStorage = {
+      currentAcreFeet: currentAf,
+      capacityAcreFeet: WICKIUP_CAPACITY_AF,
+      percentOfCapacity: percentCapacity,
+      lastUpdated: lastUpdatedStr,
+      history: dailyHistory,
+      dailyHistory: dailyHistory,
+    };
+  } else if (usbrWicAfCsv.status === "fulfilled") {
+    wickiupStorage = {
+      currentAcreFeet: currentAf,
+      capacityAcreFeet: WICKIUP_CAPACITY_AF,
+      percentOfCapacity: percentCapacity,
+      lastUpdated: lastUpdatedStr,
+      history: [],
+      dailyHistory: [],
+    };
   }
 
   // Parse Temp CSV
@@ -735,6 +847,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
         isLive: true,
       },
     ],
+    wickiupStorage,
   };
 
   cache[cacheKey] = {

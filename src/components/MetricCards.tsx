@@ -117,7 +117,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-semibold text-xs transition shadow-md flex items-center gap-2"
             >
               <Waves className="w-3.5 h-3.5" />
-              Explore River Flows
+              River Flow
             </button>
             <button
               id="view-temp-btn"

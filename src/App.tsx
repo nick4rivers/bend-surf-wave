@@ -4,6 +4,7 @@ import { MetricCards } from "./components/MetricCards";
 import { FlowGraph } from "./components/FlowGraph";
 import { TempGraph } from "./components/TempGraph";
 import { HydroNetworkGraph } from "./components/HydroNetworkGraph";
+import { WickiupReservoirGraph } from "./components/WickiupReservoirGraph";
 import { HistoricalGraph } from "./components/HistoricalGraph";
 import { CamsAndWeather } from "./components/CamsAndWeather";
 import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
@@ -147,6 +148,7 @@ export default function App() {
           <div className="animate-in fade-in duration-300 space-y-8">
             <FlowGraph data={data} unit={unit} />
             <HydroNetworkGraph data={data} unit={unit} />
+            <WickiupReservoirGraph data={data} unit={unit} />
           </div>
         )}
 

@@ -63,7 +63,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
       bgClass: "bg-emerald-50 border-emerald-300 text-emerald-800",
       barClass: "bg-emerald-500",
       active: airQuality.aqi <= 50,
-      rec: "Ideal conditions for high-exertion paddling & surfing. Pristine Cascade mountain air.",
+      rec: "Clean air. Ideal for surfing and paddling.",
     },
     {
       range: "51 – 100",
@@ -73,7 +73,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
       bgClass: "bg-amber-50 border-amber-300 text-amber-800",
       barClass: "bg-amber-400",
       active: airQuality.aqi >= 51 && airQuality.aqi <= 100,
-      rec: "Acceptable for river surfing. Sensitive surfers should monitor breathing comfort.",
+      rec: "Acceptable air quality for most surfers.",
     },
     {
       range: "101 – 150",
@@ -83,7 +83,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
       bgClass: "bg-orange-50 border-orange-300 text-orange-800",
       barClass: "bg-orange-400",
       active: airQuality.aqi >= 101 && airQuality.aqi <= 150,
-      rec: "Smoke haze present in Deschutes basin. Surfers with asthma or sensitive lungs should shorten sessions.",
+      rec: "Smoke haze. Sensitive groups should reduce exertion.",
     },
     {
       range: "151 – 200",
@@ -93,7 +93,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
       bgClass: "bg-rose-50 border-rose-300 text-rose-800",
       barClass: "bg-rose-500",
       active: airQuality.aqi >= 151 && airQuality.aqi <= 200,
-      rec: "Active smoke in river canyon. Everyone may experience throat irritation; avoid heavy cardio.",
+      rec: "Active smoke. Avoid strenuous river cardio.",
     },
     {
       range: "201 – 300",
@@ -103,7 +103,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
       bgClass: "bg-purple-50 border-purple-300 text-purple-800",
       barClass: "bg-purple-600",
       active: airQuality.aqi >= 201 && airQuality.aqi <= 300,
-      rec: "Health alert: high risk of respiratory irritation. Avoid river surf sessions.",
+      rec: "Dense smoke alert. Skip river sessions.",
     },
     {
       range: "301+",
@@ -113,7 +113,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
       bgClass: "bg-rose-950/10 border-rose-900 text-rose-950",
       barClass: "bg-rose-900",
       active: airQuality.aqi >= 301,
-      rec: "Severe emergency smoke inversion layer across Central Oregon. Remain indoors.",
+      rec: "Hazardous smoke. Stay indoors.",
     },
   ];
 
@@ -510,7 +510,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Water temperature recorded at BENO gauge (~10 miles south/upstream of park at Benham Falls)
+              Water temp recorded at BENO gauge (Benham Falls)
             </p>
           </div>
 
@@ -686,11 +686,11 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-amber-500" />
               <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
-                Live Air Quality &amp; Smoke Index (PurpleAir)
+                Air Quality
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Live PM2.5 &amp; EPA AQI from nearest sensor: <span className="font-semibold text-slate-700">{airQuality.sensorName || "Colorado Avenue"}</span> ({airQuality.distance || "0.17 mi from wave"})
+              Nearest sensor: <span className="font-semibold text-slate-700">{airQuality.sensorName || "Colorado Ave"}</span> ({airQuality.distance || "0.2 mi"})
             </p>
           </div>
 
@@ -700,7 +700,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-lg transition"
           >
-            <span>PurpleAir: Colorado Ave (#61853 • 0.17 mi)</span>
+            <span>PurpleAir Map</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
@@ -712,7 +712,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono uppercase tracking-widest text-slate-400">
-                  Real-Time Air Quality
+                  Current AQI
                 </span>
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                   airQuality.aqi <= 50
@@ -768,7 +768,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
             </div>
 
             <div className="mt-3 text-[10px] text-slate-400 flex items-center justify-between font-mono">
-              <span>Source: {airQuality.source || "PurpleAir (Colorado Ave Station #61853)"}</span>
+              <span>PurpleAir • Colorado Ave</span>
               <span>{airQuality.updatedAt}</span>
             </div>
           </div>
@@ -776,7 +776,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
           {/* Standard AQI Scale Reference Guide */}
           <div className="lg:col-span-2 space-y-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Deschutes River Surfer &amp; Paddler Health Advisory
+              AQI Health Guide
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               {aqiTiers.map((tier, idx) => (

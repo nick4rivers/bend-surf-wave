@@ -93,6 +93,23 @@ export interface SurfDataResponse {
     embedUrl: string;
     isLive: boolean;
   }>;
+  wickiupStorage?: WickiupStorageData;
+}
+
+export interface WickiupStoragePoint {
+  date: string;
+  timestamp: number;
+  acreFeet: number;
+  percent: number;
+}
+
+export interface WickiupStorageData {
+  currentAcreFeet: number;
+  capacityAcreFeet: number; // 200,000 AF active capacity
+  percentOfCapacity: number; // e.g. 17.8
+  lastUpdated: string;
+  change7d?: number;
+  history: WickiupStoragePoint[];
 }
 
 export type UnitType = "imperial" | "metric";

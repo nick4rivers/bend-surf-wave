@@ -25,7 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const tabs = [
     { id: "overview" as ActiveTab, label: "Live Overview", icon: Activity },
-    { id: "flow" as ActiveTab, label: "River Flows", icon: Waves },
+    { id: "flow" as ActiveTab, label: "River Flow", icon: Waves },
     { id: "temperature" as ActiveTab, label: "Water & Air Temp", icon: Thermometer },
     { id: "historical" as ActiveTab, label: "Historic Flow Data", icon: Activity },
     { id: "cams-weather" as ActiveTab, label: "Webcams & Weather", icon: MapPin },
