@@ -1,6 +1,6 @@
 {
   "name": "Bend Surf Wave",
-  "description": "Live river flow (CFS), water & air temperature, surfability status, webcam, and hydrographs for Bend Whitewater Park Surf Wave.",
+  "description": "Live river flow (CFS), water temperature, weather, and AI surf report for the Bend Whitewater Park surf wave in Bend, Oregon.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
