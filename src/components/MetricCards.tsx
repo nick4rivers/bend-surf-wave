@@ -14,6 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { SurfDataResponse, UnitType } from "../types";
+import { LowersQuickCard } from "./LowersQuickCard";
 
 interface MetricCardsProps {
   data: SurfDataResponse;
@@ -22,6 +23,7 @@ interface MetricCardsProps {
   onNavigateToTemp: () => void;
   onNavigateToCanals: () => void;
   onNavigateToWeather?: () => void;
+  onNavigateToLowers?: () => void;
 }
 
 export const MetricCards: React.FC<MetricCardsProps> = ({
@@ -31,6 +33,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   onNavigateToTemp,
   onNavigateToCanals,
   onNavigateToWeather,
+  onNavigateToLowers,
 }) => {
   const current = data.current;
   const upstream = data.upstreamGages;
@@ -127,6 +130,16 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               <Thermometer className="w-3.5 h-3.5 text-sky-400" />
               Temperature & Wetsuits
             </button>
+            {onNavigateToLowers && (
+              <button
+                id="view-lowers-btn"
+                onClick={onNavigateToLowers}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-semibold text-xs transition flex items-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                Lowers Report
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -545,6 +558,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Lowers Wave Report Quick Status Card (Below Surf Wave Flow Thresholds) */}
+      <LowersQuickCard onNavigateToLowers={onNavigateToLowers || (() => {})} />
     </div>
   );
 };

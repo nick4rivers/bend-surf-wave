@@ -7,6 +7,7 @@ import { HydroNetworkGraph } from "./components/HydroNetworkGraph";
 import { WickiupReservoirGraph } from "./components/WickiupReservoirGraph";
 import { HistoricalGraph } from "./components/HistoricalGraph";
 import { CamsAndWeather } from "./components/CamsAndWeather";
+import { LowersWaveReport } from "./components/LowersWaveReport";
 import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
 import { getSurfReport } from "./services/riverDataService";
@@ -115,6 +116,7 @@ export default function App() {
               onNavigateToTemp={() => setActiveTab("temperature")}
               onNavigateToCanals={() => setActiveTab("flow")}
               onNavigateToWeather={() => setActiveTab("cams-weather")}
+              onNavigateToLowers={() => setActiveTab("lowers")}
             />
 
             {/* Flow & Temperature chart sections stacked full-width */}
@@ -141,6 +143,16 @@ export default function App() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === "lowers" && (
+          <div className="animate-in fade-in duration-300 space-y-6">
+            <LowersWaveReport
+              data={data}
+              unit={unit}
+              onNavigateToFlow={() => setActiveTab("flow")}
+            />
           </div>
         )}
 
