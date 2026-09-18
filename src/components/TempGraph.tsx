@@ -28,9 +28,10 @@ import { formatHydroDateTime } from "../utils/dateUtils";
 interface TempGraphProps {
   data: SurfDataResponse;
   unit: UnitType;
+  isOverview?: boolean;
 }
 
-export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
+export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = false }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [showAirTemp, setShowAirTemp] = useState(true);
 
@@ -706,7 +707,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
         </div>
 
         {/* Current AQI Banner & Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
+        <div className={isOverview ? "mt-5" : "grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5"}>
           {/* Main AQI Badge Card */}
           <div className="bg-slate-900 text-white rounded-xl p-5 flex flex-col justify-between shadow-sm">
             <div>
@@ -774,39 +775,41 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit }) => {
           </div>
 
           {/* Standard AQI Scale Reference Guide */}
-          <div className="lg:col-span-2 space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              AQI Health Guide
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              {aqiTiers.map((tier, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-lg border transition-all flex flex-col justify-between ${
-                    tier.active
-                      ? `${tier.bgClass} ring-2 ring-slate-900 shadow-sm`
-                      : "bg-slate-50/70 border-slate-200 text-slate-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between font-bold mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2.5 h-2.5 rounded-full ${tier.barClass}`} />
-                      <span>{tier.rating}</span>
-                      <span className="text-[11px] font-mono text-slate-500 font-normal">({tier.range})</span>
+          {!isOverview && (
+            <div className="lg:col-span-2 space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                AQI Health Guide
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {aqiTiers.map((tier, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg border transition-all flex flex-col justify-between ${
+                      tier.active
+                        ? `${tier.bgClass} ring-2 ring-slate-900 shadow-sm`
+                        : "bg-slate-50/70 border-slate-200 text-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between font-bold mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${tier.barClass}`} />
+                        <span>{tier.rating}</span>
+                        <span className="text-[11px] font-mono text-slate-500 font-normal">({tier.range})</span>
+                      </div>
+                      {tier.active && (
+                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                          CURRENT
+                        </span>
+                      )}
                     </div>
-                    {tier.active && (
-                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-900 text-white">
-                        CURRENT
-                      </span>
-                    )}
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      {tier.rec}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-600 leading-snug">
-                    {tier.rec}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -78,8 +78,8 @@ export const LowersQuickCard: React.FC<LowersQuickCardProps> = ({ onNavigateToLo
           </div>
           <p className="text-sm font-medium text-slate-200 leading-snug">
             {isSurfWave
-              ? "Surfer Optimized: Glassy low-gradient wave \u2014 ideal for surfing your favorite longboard, with a mellow front surf in your kayak."
-              : "Kayak Optimized: Friendly wave-hole with a nice pile \u2014 ideal for mellow spins in your kayak, boogie boards & short longboards."}
+              ? "Glassy low-gradient wave \u2014 ideal for surfing your favorite longboard, with a mellow front surf in your kayak."
+              : "Friendly wave-hole with a nice pile \u2014 ideal for spins in your kayak, boogie boards & short longboards."}
           </p>
         </div>
       </div>

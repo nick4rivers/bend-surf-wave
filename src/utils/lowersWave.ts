@@ -29,7 +29,7 @@ export const TUNE_PROFILES: Record<LowersTuneType, TuneDetails> = {
     accentColor: "emerald",
     shortDescription: "Surfer optimized — tuned as a glassy low-gradient wave with a smooth, clean face.",
     fullDescription:
-      "Surfer Optimized: Tuned as a glassy low-gradient wave. Ideal for surfing your favorite longboard. Also provides a mellow front surf in your kayak.",
+      "Tuned as a glassy low-gradient wave. Ideal for your favorite longboard and a mellow front surf in your kayak.",
     idealCrafts: [
       {
         craft: "Longboard Surfboard",
@@ -69,12 +69,12 @@ export const TUNE_PROFILES: Record<LowersTuneType, TuneDetails> = {
     accentColor: "sky",
     shortDescription: "Kayak optimized — tuned as a friendly wave-hole with a nice foam pile for spins & boogie boarding.",
     fullDescription:
-      "Kayak Optimized: Tuned as more of a friendly wave-hole with a nice pile. Ideal for mellow spins in your kayak, boogie boards & shorter high-volume longboards.",
+      "Tuned as a friendly wave-hole with a nice pile. Ideal for spins in your kayak, boogie boards, and shorter high-volume longboards.",
     idealCrafts: [
       {
         craft: "Whitewater Kayak",
-        verdict: "Ideal for Mellow Spins",
-        details: "The foam pile catches your boat nicely for 360 spins, side-surfing, and playboating maneuvers.",
+        verdict: "Ideal for Spins",
+        details: "The foam pile catches your boat nicely for spins, side-surfing, and playboating maneuvers.",
       },
       {
         craft: "Boogie Board / Bodyboard",
@@ -94,7 +94,7 @@ export const TUNE_PROFILES: Record<LowersTuneType, TuneDetails> = {
     ],
     pros: [
       "Friendly wave-hole with a lively, cushioned pile",
-      "Ideal for mellow kayak 360s and spins",
+      "Good for spins in your kayak",
       "Great for boogie boards in the foam",
       "Shorter high-volume longboards work well",
     ],

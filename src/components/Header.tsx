@@ -1,5 +1,5 @@
 import React from "react";
-import { Waves, Activity, Thermometer, MapPin, Sparkles } from "lucide-react";
+import { Waves, Activity, Thermometer, Sparkles } from "lucide-react";
 import { ActiveTab, UnitType } from "../types";
 
 interface HeaderProps {
@@ -29,7 +29,6 @@ export const Header: React.FC<HeaderProps> = ({
     { id: "flow" as ActiveTab, label: "River Flow", icon: Waves },
     { id: "temperature" as ActiveTab, label: "Water & Air Temp", icon: Thermometer },
     { id: "historical" as ActiveTab, label: "Historic Flow Data", icon: Activity },
-    { id: "cams-weather" as ActiveTab, label: "Webcams & Weather", icon: MapPin },
   ];
 
   const getWaterRating = (tempF?: number) => {

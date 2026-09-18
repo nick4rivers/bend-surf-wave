@@ -114,4 +114,4 @@ export interface WickiupStorageData {
 
 export type UnitType = "imperial" | "metric";
 export type TimeRange = "24h" | "7d" | "30d" | "all";
-export type ActiveTab = "overview" | "flow" | "temperature" | "historical" | "cams-weather" | "lowers";
+export type ActiveTab = "overview" | "flow" | "temperature" | "historical" | "lowers";

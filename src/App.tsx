@@ -6,7 +6,7 @@ import { TempGraph } from "./components/TempGraph";
 import { HydroNetworkGraph } from "./components/HydroNetworkGraph";
 import { WickiupReservoirGraph } from "./components/WickiupReservoirGraph";
 import { HistoricalGraph } from "./components/HistoricalGraph";
-import { CamsAndWeather } from "./components/CamsAndWeather";
+import { WeatherForecast } from "./components/WeatherForecast";
 import { LowersWaveReport } from "./components/LowersWaveReport";
 import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
@@ -115,34 +115,9 @@ export default function App() {
               onNavigateToFlow={() => setActiveTab("flow")}
               onNavigateToTemp={() => setActiveTab("temperature")}
               onNavigateToCanals={() => setActiveTab("flow")}
-              onNavigateToWeather={() => setActiveTab("cams-weather")}
+              onNavigateToWeather={() => setActiveTab("temperature")}
               onNavigateToLowers={() => setActiveTab("lowers")}
             />
-
-            {/* Flow & Temperature chart sections stacked full-width */}
-            <div className="flex flex-col gap-6">
-              <FlowGraph data={data} unit={unit} />
-
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Waves className="w-4 h-4 text-sky-600" />
-                    <h3 className="font-bold text-slate-900 text-base">
-                      Water Temp & Wetsuit Guide
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab("temperature")}
-                    className="text-xs text-sky-600 hover:text-sky-700 font-semibold flex items-center gap-1"
-                  >
-                    Full Temperature Log &rarr;
-                  </button>
-                </div>
-                <div className="py-2">
-                  <TempGraph data={data} unit={unit} />
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -167,18 +142,13 @@ export default function App() {
         {activeTab === "temperature" && (
           <div className="animate-in fade-in duration-300 space-y-6">
             <TempGraph data={data} unit={unit} />
+            <WeatherForecast data={data} unit={unit} />
           </div>
         )}
 
         {activeTab === "historical" && (
           <div className="animate-in fade-in duration-300 space-y-6">
             <HistoricalGraph data={data} unit={unit} />
-          </div>
-        )}
-
-        {activeTab === "cams-weather" && (
-          <div className="animate-in fade-in duration-300 space-y-6">
-            <CamsAndWeather data={data} unit={unit} />
           </div>
         )}
       </main>

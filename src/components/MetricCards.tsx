@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { SurfDataResponse, UnitType } from "../types";
 import { LowersQuickCard } from "./LowersQuickCard";
+import { RiverWebcam } from "./RiverWebcam";
 
 interface MetricCardsProps {
   data: SurfDataResponse;
@@ -144,6 +145,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         </div>
       </div>
 
+      {/* Live River & Surf Webcam (Directly below the first wave report div) */}
+      <RiverWebcam data={data} />
+
       {/* 4 Essential Metrics Cards Grid (Professional Polish clean white cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Card 1: Flow (CFS) */}
@@ -243,14 +247,19 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         </div>
 
         {/* Card 3: Air & Atmosphere */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm transition-all flex flex-col justify-between">
+        <div
+          onClick={onNavigateToTemp}
+          className="group cursor-pointer bg-white border border-slate-200 hover:border-sky-400 rounded-xl p-5 shadow-sm transition-all flex flex-col justify-between"
+        >
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
               <span className="flex items-center gap-1.5 text-slate-500">
                 <Wind className="w-4 h-4 text-slate-600" />
                 Air & Weather
               </span>
-              <span className="text-slate-400 text-[10px]">Bend, OR</span>
+              <span className="text-sky-600 group-hover:translate-x-0.5 transition-transform text-[11px] font-semibold">
+                Forecast &rarr;
+              </span>
             </div>
 
             <div className="flex items-baseline gap-1 mt-1">
