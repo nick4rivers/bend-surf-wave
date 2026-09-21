@@ -37,7 +37,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
 
   const airQuality = data.airQuality || {
     aqi: 28,
-    rating: "Fresh AF",
+    rating: "Fresh",
     category: "Good (0–50 AQI)",
     color: "emerald",
     description: "Pristine Cascade mountain air quality at Bend Whitewater Park.",
@@ -58,7 +58,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
   const aqiTiers = [
     {
       range: "0 – 50",
-      rating: "Fresh AF",
+      rating: "Fresh",
       label: "Good / Clean Air",
       color: "emerald",
       bgClass: "bg-emerald-50 border-emerald-300 text-emerald-800",

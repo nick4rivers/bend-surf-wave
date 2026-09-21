@@ -29,7 +29,7 @@ export const TUNE_PROFILES: Record<LowersTuneType, TuneDetails> = {
     accentColor: "emerald",
     shortDescription: "Surfer optimized — tuned as a glassy low-gradient wave with a smooth, clean face.",
     fullDescription:
-      "Tuned as a glassy low-gradient wave. Ideal for your favorite longboard and a mellow front surf in your kayak.",
+      "Tuned as a glassy low-gradient wave. Ideal for your favorite longboard or a mellow front surf in your kayak.",
     idealCrafts: [
       {
         craft: "Longboard Surfboard",

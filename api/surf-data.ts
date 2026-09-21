@@ -77,14 +77,14 @@ function calculateEPAAqi(pm: number) {
   }
   aqi = Math.max(0, Math.min(500, aqi));
 
-  let rating = "Fresh AF";
+  let rating = "Fresh";
   let category = "Good (0–50 AQI)";
   let color = "emerald";
   let description = "Pristine Cascade mountain air quality across Bend.";
   let recommendation = "Ideal conditions for high-exertion river surfing & paddling. Full lung capacity!";
 
   if (aqi <= 50) {
-    rating = "Fresh AF";
+    rating = "Fresh";
     category = "Good (0–50 AQI)";
     color = "emerald";
     description = "Pristine Cascade mountain air quality across Bend.";
@@ -685,7 +685,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
 
   let airQualityData: any = {
     aqi: 28,
-    rating: "Fresh AF",
+    rating: "Fresh",
     category: "Good (0–50 AQI)",
     color: "emerald",
     description: "Pristine Cascade mountain air quality at Bend Whitewater Park.",

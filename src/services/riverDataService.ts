@@ -37,14 +37,14 @@ function calculateEPAAqi(pm: number) {
   }
   aqi = Math.max(0, Math.min(500, aqi));
 
-  let rating = "Fresh AF";
+  let rating = "Fresh";
   let category = "Good (0–50 AQI)";
   let color = "emerald";
   let description = "Pristine Cascade mountain air quality across Bend.";
   let recommendation = "Ideal conditions for high-exertion river surfing & paddling. Full lung capacity!";
 
   if (aqi <= 50) {
-    rating = "Fresh AF";
+    rating = "Fresh";
     category = "Good (0–50 AQI)";
     color = "emerald";
     description = "Pristine Cascade mountain air quality across Bend.";
@@ -156,7 +156,7 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
 
   let airQualityData: any = {
     aqi: 28,
-    rating: "Fresh AF",
+    rating: "Fresh",
     category: "Good (0–50 AQI)",
     color: "emerald",
     description: "Pristine Cascade mountain air quality at Bend Whitewater Park.",
@@ -363,6 +363,22 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
   };
 }
 
+function cleanSurfData(data: SurfDataResponse): SurfDataResponse {
+  if (!data) return data;
+  if (data.airQuality) {
+    if (typeof data.airQuality.rating === "string") {
+      data.airQuality.rating = data.airQuality.rating.replace(/fresh af/gi, "Fresh").trim();
+    }
+    if (typeof data.airQuality.category === "string") {
+      data.airQuality.category = data.airQuality.category.replace(/fresh af/gi, "Fresh");
+    }
+    if (typeof data.airQuality.description === "string") {
+      data.airQuality.description = data.airQuality.description.replace(/fresh af/gi, "Fresh");
+    }
+  }
+  return data;
+}
+
 /**
  * Universal Surf Data Fetcher:
  * 1. Calls the /api/surf-data endpoint (works with Vercel serverless function & local Express server).
@@ -373,7 +389,8 @@ export async function getSurfReport(): Promise<SurfDataResponse> {
   try {
     const res = await fetch("/api/surf-data");
     if (res.ok) {
-      return await res.json();
+      const json = await res.json();
+      return cleanSurfData(json);
     }
     console.warn(`/api/surf-data returned status ${res.status}. Failing over to direct client-side fetch.`);
   } catch (err) {
@@ -381,5 +398,6 @@ export async function getSurfReport(): Promise<SurfDataResponse> {
   }
 
   // Graceful client-side fallback
-  return await fetchSurfDataClientSide();
+  const fallback = await fetchSurfDataClientSide();
+  return cleanSurfData(fallback);
 }

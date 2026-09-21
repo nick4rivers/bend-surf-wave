@@ -40,7 +40,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   const upstream = data.upstreamGages;
   const airQuality = data.airQuality || {
     aqi: 25,
-    rating: "Fresh AF",
+    rating: "Fresh",
     category: "Good (0–50 AQI)",
     color: "emerald",
     description: "Pristine Cascade mountain air.",
@@ -343,7 +343,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                   ? "bg-purple-50 text-purple-700 border-purple-200"
                   : "bg-rose-900 text-white border-rose-950"
               }`}>
-                {airQuality.rating}
+                {airQuality.rating?.replace(/fresh af/gi, "Fresh") || "Fresh"}
               </span>
             </div>
 
@@ -358,7 +358,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <span>300+</span>
               </div>
               <div className="h-2 w-full rounded-full bg-slate-100 flex overflow-hidden shadow-inner">
-                <div className="w-[16.6%] bg-emerald-500 border-r border-white/60" title="0-50: Fresh AF (Good)" />
+                <div className="w-[16.6%] bg-emerald-500 border-r border-white/60" title="0-50: Fresh (Good)" />
                 <div className="w-[16.6%] bg-amber-400 border-r border-white/60" title="51-100: Moderate" />
                 <div className="w-[16.6%] bg-orange-400 border-r border-white/60" title="101-150: Sensitive Groups" />
                 <div className="w-[16.6%] bg-rose-500 border-r border-white/60" title="151-200: Unhealthy" />
