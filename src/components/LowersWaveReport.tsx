@@ -400,7 +400,7 @@ export const LowersWaveReport: React.FC<LowersWaveReportProps> = ({
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Bend Whitewater Park features multiple river hydraulic gates: the{" "}
               <strong className="text-white font-semibold">Upper Green Wave</strong> (the
-              main steep surfing wave powered by pneumatic bladder plates) and the{" "}
+              main steep surfing wave) and the{" "}
               <strong className="text-white font-semibold">Lowers (Jason&apos;s Wave)</strong>,
               custom-shaped on alternate days for longboards, kayaks, and boogie
               boards.

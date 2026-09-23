@@ -129,7 +129,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition flex items-center gap-2"
             >
               <Thermometer className="w-3.5 h-3.5 text-sky-400" />
-              Temperature & Wetsuits
+              River & Air Temps
             </button>
             {onNavigateToLowers && (
               <button
@@ -562,7 +562,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             </div>
             <p className="text-emerald-950 font-bold text-sm mt-1">Firing</p>
             <p className="text-emerald-800 text-[11px] mt-1 leading-snug">
-              Wave is steep and fast, bring your full performance river surf quiver.
+              Wave is steep and fast, bring your performance river surfboard.
             </p>
           </div>
         </div>

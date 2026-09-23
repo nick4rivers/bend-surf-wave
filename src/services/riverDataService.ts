@@ -243,13 +243,13 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
   let statusRating = "FIRING";
   let statusLabel = "Firing";
   let statusColor = "emerald";
-  let statusDescription = "Wave is steep and fast, bring your full performance river surf quiver.";
+  let statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
 
   if (bendBelowCfs >= 800) {
     statusRating = "FIRING";
     statusLabel = "Firing";
     statusColor = "emerald";
-    statusDescription = "Wave is steep and fast, bring your full performance river surf quiver.";
+    statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
   } else if (bendBelowCfs >= 650) {
     statusRating = "SURFING";
     statusLabel = "Surfing";

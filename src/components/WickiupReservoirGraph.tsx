@@ -90,7 +90,7 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
   unit,
 }) => {
   const [timeWindow, setTimeWindow] = useState<TimeWindow>("1y");
-  const [scaleMode, setScaleMode] = useState<ScaleMode>("dynamic");
+  const [scaleMode, setScaleMode] = useState<ScaleMode>("full");
 
   const storageData = data.wickiupStorage;
   const rawHistory = storageData?.history || [];
@@ -443,22 +443,21 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
             <h3 className="font-bold text-slate-900 text-base">
               Wickiup Reservoir Storage
             </h3>
+            <span className="hidden sm:inline-flex items-center gap-2 text-xs text-slate-400 font-normal pl-2 border-l border-slate-200">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2.5 h-0.5 bg-amber-500 rounded-full"></span>
+                <span className="text-amber-700 font-medium">Current Level</span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2.5 h-0.5 bg-sky-600 rounded-full"></span>
+                <span className="text-sky-700 font-medium">200k Full Pool</span>
+              </span>
+            </span>
           </div>
 
           {/* Controls: Time Window & Scale Mode */}
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold text-slate-600 border border-slate-200">
-              <button
-                onClick={() => setScaleMode("dynamic")}
-                className={`px-2.5 py-1 rounded-md transition ${
-                  scaleMode === "dynamic"
-                    ? "bg-white text-sky-700 shadow-xs font-bold"
-                    : "hover:text-slate-900"
-                }`}
-                title="Zoom axis to fluctuation range"
-              >
-                Detailed Zoom
-              </button>
               <button
                 onClick={() => setScaleMode("full")}
                 className={`px-2.5 py-1 rounded-md transition ${
@@ -469,6 +468,17 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
                 title="Show 0 to 200,000 AF full reservoir scale"
               >
                 0–200k Full Pool
+              </button>
+              <button
+                onClick={() => setScaleMode("dynamic")}
+                className={`px-2.5 py-1 rounded-md transition ${
+                  scaleMode === "dynamic"
+                    ? "bg-white text-sky-700 shadow-xs font-bold"
+                    : "hover:text-slate-900"
+                }`}
+                title="Zoom axis to fluctuation range"
+              >
+                Detailed Zoom
               </button>
             </div>
 
@@ -572,14 +582,15 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
               <ReferenceLine
                 yAxisId="afAxis"
                 y={currentAf}
-                stroke="#38bdf8"
-                strokeDasharray="2 2"
+                stroke="#f97316"
+                strokeWidth={2}
+                strokeDasharray="4 3"
                 label={{
-                  value: `Current: ${currentAf.toLocaleString()} AF (${currentPct}%)`,
+                  value: `Current Level: ${currentAf.toLocaleString()} AF (${currentPct}%)`,
                   position: "insideBottomRight",
-                  fill: "#0369a1",
-                  fontSize: 10,
-                  fontWeight: 600,
+                  fill: "#ea580c",
+                  fontSize: 11,
+                  fontWeight: 700,
                 }}
               />
 

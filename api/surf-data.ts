@@ -611,13 +611,13 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   let statusRating = "FIRING";
   let statusLabel = "Firing";
   let statusColor = "emerald";
-  let statusDescription = "Wave is steep and fast, bring your full performance river surf quiver.";
+  let statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
 
   if (latestFlow.cfs >= 800) {
     statusRating = "FIRING";
     statusLabel = "Firing";
     statusColor = "emerald";
-    statusDescription = "Wave is steep and fast, bring your full performance river surf quiver.";
+    statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
   } else if (latestFlow.cfs >= 650) {
     statusRating = "SURFING";
     statusLabel = "Surfing";

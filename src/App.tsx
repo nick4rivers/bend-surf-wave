@@ -155,18 +155,10 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-800 font-bold">
-              <Waves className="w-4 h-4 text-sky-600" />
-              <span>Bend Surf Wave</span>
-            </div>
-
-            <div className="text-[11px] text-slate-400">
-              <p>
-                Adapted from the <span className="font-semibold text-slate-600">Green Wave Surf Report Website</span>.
-              </p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-800 font-bold">
+            <Waves className="w-4 h-4 text-sky-600" />
+            <span>Bend Surf Wave</span>
           </div>
         </div>
       </footer>

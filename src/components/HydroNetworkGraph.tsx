@@ -148,7 +148,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
           <div className="flex items-center gap-2">
             <Compass className="w-5 h-5 text-sky-600" />
             <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-              Upper Deschutes River Flow Balance & Canal Topology
+              Upper Deschutes River Flows - Upstream to Downstream
             </h3>
           </div>
           <span className="text-xs text-slate-400 hidden sm:inline font-mono">
@@ -251,7 +251,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Click gage badges below to toggle traces on and off
+              Click gage badges to toggle on and off
             </p>
           </div>
 

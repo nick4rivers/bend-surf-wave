@@ -39,7 +39,7 @@ export const TUNE_PROFILES: Record<LowersTuneType, TuneDetails> = {
       {
         craft: "Whitewater Kayak",
         verdict: "Mellow Front Surf",
-        details: "Clean glassy face provides an easy, comfortable front surf without aggressive grabby edges.",
+        details: "Clean glassy face provides an easy, comfortable front surf. Great for beginning boaters.",
       },
       {
         craft: "SUP (Stand Up Paddleboard)",
@@ -89,7 +89,7 @@ export const TUNE_PROFILES: Record<LowersTuneType, TuneDetails> = {
       {
         craft: "River Surfing Shortboards",
         verdict: "Niche / Tricky",
-        details: "Standard low-volume shortboards can sink; best saved for the Upper Green Wave.",
+        details: "Standard low-volume shortboards are best saved for the Upper Green Wave.",
       },
     ],
     pros: [
