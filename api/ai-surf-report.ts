@@ -6,7 +6,8 @@ import {
   SurfReportConditions,
 } from "./surf-report-prompt";
 
-// Cache in-memory on the server to prevent unnecessary repeated API calls
+// Cache in-memory strictly for 15s to debounce simultaneous React StrictMode mounts
+// while ensuring every browser open / refresh gets a fresh, live Gemini generation
 let reportCache: {
   key: string;
   report: string;
@@ -14,7 +15,7 @@ let reportCache: {
   model: string;
 } | null = null;
 
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+const CACHE_TTL_MS = 15 * 1000; // 15 seconds debounce
 
 export default async function aiSurfReportHandler(req: any, res: any) {
   // CORS headers

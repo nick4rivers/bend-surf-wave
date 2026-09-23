@@ -19,20 +19,47 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Extract flow metrics and previous days' flows
+  // Extract flow metrics and previous days' flows accurately (24h and 48h prior)
   const currentCfs = data.current?.flowCfs ?? 0;
   const flowTrendDiff = data.current?.flowTrendDiff ?? 0;
   const flowSeries = data.timeSeries?.flow || [];
 
-  // Find yesterday & 2-days-ago flows from timeSeries
+  // Calculate actual yesterday (~24h ago) and 2-days-ago (~48h ago) flows
   let yesterdayCfs: number | undefined;
   let twoDaysAgoCfs: number | undefined;
 
-  if (flowSeries.length >= 2) {
-    yesterdayCfs = Math.round(flowSeries[flowSeries.length - 2]?.cfs || 0);
-  }
-  if (flowSeries.length >= 3) {
-    twoDaysAgoCfs = Math.round(flowSeries[flowSeries.length - 3]?.cfs || 0);
+  if (flowSeries.length > 0) {
+    const latestItem = flowSeries[flowSeries.length - 1];
+    const latestTime = new Date(latestItem.date.replace(" ", "T")).getTime();
+    const targetYesterday = latestTime - 24 * 60 * 60 * 1000;
+    const target2Days = latestTime - 48 * 60 * 60 * 1000;
+
+    let closestYesterday = flowSeries[0];
+    let minDiffYesterday = Infinity;
+    let closest2Days = flowSeries[0];
+    let minDiff2Days = Infinity;
+
+    for (const item of flowSeries) {
+      const itemTime = new Date(item.date.replace(" ", "T")).getTime();
+      const diffY = Math.abs(itemTime - targetYesterday);
+      if (diffY < minDiffYesterday) {
+        minDiffYesterday = diffY;
+        closestYesterday = item;
+      }
+      const diff2 = Math.abs(itemTime - target2Days);
+      if (diff2 < minDiff2Days) {
+        minDiff2Days = diff2;
+        closest2Days = item;
+      }
+    }
+
+    // Only assign if within 4 hours of target timestamp
+    if (minDiffYesterday < 4 * 3600 * 1000) {
+      yesterdayCfs = Math.round(closestYesterday.cfs);
+    }
+    if (minDiff2Days < 6 * 3600 * 1000) {
+      twoDaysAgoCfs = Math.round(closest2Days.cfs);
+    }
   }
 
   // Today's forecast high from Open-Meteo daily weather
@@ -98,15 +125,21 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
           throw new Error("Empty report received");
         }
       } catch (err: any) {
-        console.warn("Failed to fetch surf report, using default brief:", err);
+        console.warn("Failed to fetch surf report, using rich condition brief:", err);
         setError(err.message || "Failed to generate report");
-        // Fallback to data.current.statusDescription if available
+        // High-fidelity fallback brief comparing flow and weather
+        const diffStr = yesterdayCfs
+          ? Math.abs(currentCfs - yesterdayCfs) <= 10
+            ? "holding steady with yesterday"
+            : currentCfs > yesterdayCfs
+            ? `up ${Math.round(currentCfs - yesterdayCfs)} CFS from yesterday (${yesterdayCfs} CFS)`
+            : `down ${Math.round(yesterdayCfs - currentCfs)} CFS from yesterday (${yesterdayCfs} CFS)`
+          : "solid on the face";
+
         setReportData({
-          report:
-            data.current?.statusDescription ||
-            `Flows are running at ${currentCfs} CFS with solid push on the face. Highs reach near ${Math.round(
-              todayHigh
-            )}°F today with fresh air across the river corridor.`,
+          report: `Flows are running at ${currentCfs} CFS (${diffStr}), serving up a ${
+            currentCfs >= 800 ? "steep, fast pocket primed for shortboards" : "carveable wave shoulder with steady push"
+          }. Expect ${weatherDesc.toLowerCase()} with a daytime high near ${Math.round(todayHigh)}°F.`,
           source: "Condition Brief",
           generatedAt: new Date().toISOString(),
         });
@@ -128,13 +161,13 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
       data.current?.statusRating,
       data.current?.waterTempF,
       data.current?.airTempF,
-      data.current?.statusDescription,
     ]
   );
 
+  // Trigger fresh generation every time the app opens or live data refreshes
   useEffect(() => {
-    fetchAiReport(false);
-  }, [fetchAiReport]);
+    fetchAiReport(true);
+  }, [data.lastUpdated]);
 
   return (
     <div className="space-y-1.5 max-w-2xl">
@@ -143,12 +176,6 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
           <Sparkles className={`w-3 h-3 text-sky-400 ${loading ? "animate-spin" : ""}`} />
           Surf Report
         </span>
-
-        {reportData?.source && !loading && (
-          <span className="text-slate-400 text-[10px] hidden sm:inline">
-            • {reportData.source.includes("Gemini") ? "Powered by Gemini 3.8" : reportData.source}
-          </span>
-        )}
 
         <button
           onClick={() => fetchAiReport(true)}
@@ -167,9 +194,21 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
           <span>Generating surf report...</span>
         </div>
       ) : (
-        <p className="text-slate-200 text-xs sm:text-sm max-w-2xl leading-relaxed font-normal">
-          {reportData?.report}
-        </p>
+        <div className="relative">
+          {loading && (
+            <div className="flex items-center gap-2 py-0.5 text-sky-400 text-xs animate-pulse mb-1">
+              <div className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+              <span>Updating surf report with live river conditions...</span>
+            </div>
+          )}
+          <p
+            className={`text-slate-200 text-xs sm:text-sm max-w-2xl leading-relaxed font-normal transition-opacity duration-200 ${
+              loading ? "opacity-60" : "opacity-100"
+            }`}
+          >
+            {reportData?.report}
+          </p>
+        </div>
       )}
     </div>
   );
