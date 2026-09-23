@@ -10,7 +10,7 @@ interface CacheEntry<T> {
 const cache: Record<string, CacheEntry<any>> = {};
 const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes cache
 
-export function fetchUrl(url: string): Promise<string> {
+export function fetchUrl(url: string, customHeaders?: Record<string, string>): Promise<string> {
   return new Promise((resolve, reject) => {
     const isHttps = url.startsWith("https");
     const client = isHttps ? https : http;
@@ -18,14 +18,18 @@ export function fetchUrl(url: string): Promise<string> {
       url,
       {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; BendSurfWave/2.0; +https://bendsurfwave.com)",
-          Accept: "*/*",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          Accept: "application/json, text/plain, */*",
+          ...customHeaders,
         },
         timeout: 10000,
       },
       (res) => {
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          return fetchUrl(res.headers.location).then(resolve).catch(reject);
+          return fetchUrl(res.headers.location, customHeaders).then(resolve).catch(reject);
+        }
+        if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+          return reject(new Error(`HTTP ${res.statusCode} fetching ${url}`));
         }
         let data = "";
         res.on("data", (chunk) => (data += chunk));
@@ -178,35 +182,38 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   let weather: any = null;
   const openMeteoHourlyMap: Record<string, number> = {};
   if (openMeteoWeatherJson.status === "fulfilled" && openMeteoWeatherJson.value) {
-    try {
-      const rawWeather = JSON.parse(openMeteoWeatherJson.value);
-      if (rawWeather?.hourly?.time && Array.isArray(rawWeather.hourly.time) && Array.isArray(rawWeather.hourly.temperature_2m)) {
-        rawWeather.hourly.time.forEach((tStr: string, idx: number) => {
-          const tempVal = rawWeather.hourly.temperature_2m[idx];
-          if (typeof tempVal === "number" && !isNaN(tempVal)) {
-            const withSpace = tStr.replace("T", " ");
-            openMeteoHourlyMap[withSpace] = tempVal;
-            openMeteoHourlyMap[tStr] = tempVal;
-            const normalized = withSpace.substring(0, 16);
-            openMeteoHourlyMap[normalized] = tempVal;
-          }
-        });
-      }
+    const rawVal = openMeteoWeatherJson.value.trim();
+    if (rawVal.startsWith("{") || rawVal.startsWith("[")) {
+      try {
+        const rawWeather = JSON.parse(rawVal);
+        if (rawWeather?.hourly?.time && Array.isArray(rawWeather.hourly.time) && Array.isArray(rawWeather.hourly.temperature_2m)) {
+          rawWeather.hourly.time.forEach((tStr: string, idx: number) => {
+            const tempVal = rawWeather.hourly.temperature_2m[idx];
+            if (typeof tempVal === "number" && !isNaN(tempVal)) {
+              const withSpace = tStr.replace("T", " ");
+              openMeteoHourlyMap[withSpace] = tempVal;
+              openMeteoHourlyMap[tStr] = tempVal;
+              const normalized = withSpace.substring(0, 16);
+              openMeteoHourlyMap[normalized] = tempVal;
+            }
+          });
+        }
 
-      weather = { ...rawWeather };
-      if (weather?.daily?.time && Array.isArray(weather.daily.time) && weather.daily.time.length > 7) {
-        const sliceLen = 7;
-        weather.daily = {
-          time: weather.daily.time.slice(-sliceLen),
-          temperature_2m_max: weather.daily.temperature_2m_max?.slice(-sliceLen) || [],
-          temperature_2m_min: weather.daily.temperature_2m_min?.slice(-sliceLen) || [],
-          weather_code: weather.daily.weather_code?.slice(-sliceLen) || [],
-          sunrise: weather.daily.sunrise?.slice(-sliceLen) || [],
-          sunset: weather.daily.sunset?.slice(-sliceLen) || [],
-        };
+        weather = { ...rawWeather };
+        if (weather?.daily?.time && Array.isArray(weather.daily.time) && weather.daily.time.length > 7) {
+          const sliceLen = 7;
+          weather.daily = {
+            time: weather.daily.time.slice(-sliceLen),
+            temperature_2m_max: weather.daily.temperature_2m_max?.slice(-sliceLen) || [],
+            temperature_2m_min: weather.daily.temperature_2m_min?.slice(-sliceLen) || [],
+            weather_code: weather.daily.weather_code?.slice(-sliceLen) || [],
+            sunrise: weather.daily.sunrise?.slice(-sliceLen) || [],
+            sunset: weather.daily.sunset?.slice(-sliceLen) || [],
+          };
+        }
+      } catch (err) {
+        console.warn("Could not parse weather JSON:", err);
       }
-    } catch (err) {
-      console.error("Error parsing weather json:", err);
     }
   }
 
@@ -544,27 +551,32 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   };
 
   if (usgsJson.status === "fulfilled" && usgsJson.value) {
-    try {
-      const json = JSON.parse(usgsJson.value);
-      const timeSeries = json?.value?.timeSeries || [];
-      for (const ts of timeSeries) {
-        const siteCode = ts?.sourceInfo?.siteCode?.[0]?.value;
-        const variableCode = ts?.variable?.variableCode?.[0]?.value;
-        const latestVal = ts?.values?.[0]?.value?.slice(-1)?.[0];
-        if (siteCode && usgsGages[siteCode] && latestVal) {
-          const numVal = parseFloat(latestVal.value);
-          if (!isNaN(numVal)) {
-            if (variableCode === "00060") {
-              usgsGages[siteCode].cfs = numVal;
-              usgsGages[siteCode].updated = latestVal.dateTime;
-            } else if (variableCode === "00010") {
-              usgsGages[siteCode].tempF = parseFloat(((numVal * 9) / 5 + 32).toFixed(1));
+    const rawVal = usgsJson.value.trim();
+    if (rawVal.startsWith("{") || rawVal.startsWith("[")) {
+      try {
+        const json = JSON.parse(rawVal);
+        const timeSeries = json?.value?.timeSeries || [];
+        for (const ts of timeSeries) {
+          const siteCode = ts?.sourceInfo?.siteCode?.[0]?.value;
+          const variableCode = ts?.variable?.variableCode?.[0]?.value;
+          const latestVal = ts?.values?.[0]?.value?.slice(-1)?.[0];
+          if (siteCode && usgsGages[siteCode] && latestVal) {
+            const numVal = parseFloat(latestVal.value);
+            if (!isNaN(numVal)) {
+              if (variableCode === "00060") {
+                usgsGages[siteCode].cfs = numVal;
+                usgsGages[siteCode].updated = latestVal.dateTime;
+              } else if (variableCode === "00010") {
+                usgsGages[siteCode].tempF = parseFloat(((numVal * 9) / 5 + 32).toFixed(1));
+              }
             }
           }
         }
+      } catch (err) {
+        console.warn("Could not parse USGS JSON payload:", err);
       }
-    } catch (err) {
-      console.error("Error parsing USGS json:", err);
+    } else {
+      console.warn("USGS returned non-JSON response payload:", rawVal.slice(0, 100));
     }
   }
 
@@ -778,29 +790,32 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   }
 
   if (!parsedFromPurpleAir && openMeteoAirJson.status === "fulfilled" && openMeteoAirJson.value) {
-    try {
-      const aq = JSON.parse(openMeteoAirJson.value);
-      const pmVal = typeof aq?.current?.pm2_5 === "number" ? aq.current.pm2_5 : 5.2;
-      const pm10 = typeof aq?.current?.pm10 === "number" ? parseFloat(aq.current.pm10.toFixed(1)) : 8.0;
-      const ozone = typeof aq?.current?.ozone === "number" ? parseFloat(aq.current.ozone.toFixed(1)) : 82.0;
+    const rawVal = openMeteoAirJson.value.trim();
+    if (rawVal.startsWith("{") || rawVal.startsWith("[")) {
+      try {
+        const aq = JSON.parse(rawVal);
+        const pmVal = typeof aq?.current?.pm2_5 === "number" ? aq.current.pm2_5 : 5.2;
+        const pm10 = typeof aq?.current?.pm10 === "number" ? parseFloat(aq.current.pm10.toFixed(1)) : 8.0;
+        const ozone = typeof aq?.current?.ozone === "number" ? parseFloat(aq.current.ozone.toFixed(1)) : 82.0;
 
-      const epa = calculateEPAAqi(pmVal);
-      airQualityData = {
-        ...epa,
-        pm2_5: parseFloat(pmVal.toFixed(1)),
-        pm10,
-        ozone,
-        updatedAt: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-        source: "PurpleAir (Colorado Ave Station #61853)",
-        sourceUrl: "https://map.purpleair.com/1/m/i/pm25_10m/a10/c0?select=61853#15/44.0474/-121.3182",
-        sensorName: "Colorado Avenue",
-        sensorIndex: 61853,
-        distance: "0.17 miles from Surf Wave",
-        pm2_5_10m: parseFloat(pmVal.toFixed(1)),
-        pm2_5_1h: parseFloat((pmVal * 1.05).toFixed(1)),
-      };
-    } catch (err) {
-      console.error("Error parsing local atmospheric air quality JSON:", err);
+        const epa = calculateEPAAqi(pmVal);
+        airQualityData = {
+          ...epa,
+          pm2_5: parseFloat(pmVal.toFixed(1)),
+          pm10,
+          ozone,
+          updatedAt: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+          source: "PurpleAir (Colorado Ave Station #61853)",
+          sourceUrl: "https://map.purpleair.com/1/m/i/pm25_10m/a10/c0?select=61853#15/44.0474/-121.3182",
+          sensorName: "Colorado Avenue",
+          sensorIndex: 61853,
+          distance: "0.17 miles from Surf Wave",
+          pm2_5_10m: parseFloat(pmVal.toFixed(1)),
+          pm2_5_1h: parseFloat((pmVal * 1.05).toFixed(1)),
+        };
+      } catch (err) {
+        console.warn("Could not parse local atmospheric air quality JSON:", err);
+      }
     }
   }
 

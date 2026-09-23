@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import surfDataHandler from "./api/surf-data";
+import aiSurfReportHandler from "./api/ai-surf-report";
 
 const app = express();
 const PORT = 3000;
@@ -11,6 +12,10 @@ app.use(express.json());
 // API routes - powered by the Vercel-compatible serverless function handler
 app.all("/api/surf-data", (req, res) => {
   return surfDataHandler(req, res);
+});
+
+app.all("/api/ai-surf-report", (req, res) => {
+  return aiSurfReportHandler(req, res);
 });
 
 app.get("/api/health", (req, res) => {

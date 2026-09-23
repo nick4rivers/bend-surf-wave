@@ -93,9 +93,33 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
   console.info("Executing client-side direct river data fetch...");
 
   const [usgsRes, weatherRes, airRes] = await Promise.allSettled([
-    fetch("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=14070500,14092500,13206000&parameterCd=00060,00010").then(r => r.json()),
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7").then(r => r.json()),
-    fetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles").then(r => r.json()),
+    fetch("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=14070500,14092500,13206000&parameterCd=00060,00010").then(async (r) => {
+      if (!r.ok) throw new Error(`USGS HTTP ${r.status}`);
+      const text = await r.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+        throw new Error("Invalid non-JSON response from USGS");
+      }
+      return JSON.parse(trimmed);
+    }),
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7").then(async (r) => {
+      if (!r.ok) throw new Error(`Weather HTTP ${r.status}`);
+      const text = await r.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+        throw new Error("Invalid non-JSON response from weather API");
+      }
+      return JSON.parse(trimmed);
+    }),
+    fetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles").then(async (r) => {
+      if (!r.ok) throw new Error(`Air Quality HTTP ${r.status}`);
+      const text = await r.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+        throw new Error("Invalid non-JSON response from air quality API");
+      }
+      return JSON.parse(trimmed);
+    }),
   ]);
 
   const usgsGages: Record<string, { name: string; cfs?: number; tempF?: number; updated?: string }> = {

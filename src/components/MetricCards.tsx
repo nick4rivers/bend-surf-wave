@@ -16,6 +16,7 @@ import {
 import { SurfDataResponse, UnitType } from "../types";
 import { LowersQuickCard } from "./LowersQuickCard";
 import { RiverWebcam } from "./RiverWebcam";
+import { AiSurfReportText } from "./AiSurfReportText";
 
 interface MetricCardsProps {
   data: SurfDataResponse;
@@ -109,9 +110,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 {current.statusLabel.toUpperCase()}
               </span>
             </h2>
-            <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              {current.statusDescription}
-            </p>
+            <AiSurfReportText data={data} unit={unit} />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
