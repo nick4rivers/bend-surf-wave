@@ -98,7 +98,7 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
           throw new Error("Empty report received");
         }
       } catch (err: any) {
-        console.warn("Failed to fetch AI surf report, using default brief:", err);
+        console.warn("Failed to fetch surf report, using default brief:", err);
         setError(err.message || "Failed to generate report");
         // Fallback to data.current.statusDescription if available
         setReportData({
@@ -141,7 +141,7 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
       <div className="flex items-center gap-2 text-[11px] font-medium text-sky-400">
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-800/60 text-sky-300 font-mono tracking-wide uppercase text-[10px]">
           <Sparkles className={`w-3 h-3 text-sky-400 ${loading ? "animate-spin" : ""}`} />
-          AI Surf Report
+          Surf Report
         </span>
 
         {reportData?.source && !loading && (
@@ -153,7 +153,7 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
         <button
           onClick={() => fetchAiReport(true)}
           disabled={loading}
-          title="Regenerate AI surf report from current conditions"
+          title="Regenerate surf report from current conditions"
           className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition px-2 py-0.5 rounded hover:bg-slate-800 disabled:opacity-50"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin text-sky-400" : ""}`} />
@@ -164,7 +164,7 @@ export const AiSurfReportText: React.FC<AiSurfReportTextProps> = ({ data, unit }
       {loading && !reportData?.report ? (
         <div className="flex items-center gap-2.5 py-1 text-slate-300 text-xs sm:text-sm animate-pulse">
           <div className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
-          <span>Generating Surfline AI surf report from live Deschutes flows & weather...</span>
+          <span>Generating surf report...</span>
         </div>
       ) : (
         <p className="text-slate-200 text-xs sm:text-sm max-w-2xl leading-relaxed font-normal">
