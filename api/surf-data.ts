@@ -147,7 +147,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     usbrWicAfCsv,
     usbrWic1YrCsv,
   ] = await Promise.allSettled([
-    fetchHydrometInstant(["wico q", "beno q", "beno wf", "lapo q", "ceno qc", "arno qc"], { start: recentStart }),
+    fetchHydrometInstant(["wico q", "beno q", "beno wf", "lapo q", "ceno qc", "arno qc", "debo q"], { start: recentStart }),
     fetchHydrometDaily(["beno qd", "ceno qj", "arno qj"], yearStart, yesterday),
     // Never let the 13-year archive hold up live data; it's cached for a day once it loads
     Promise.race([
@@ -224,7 +224,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   });
 
   const recentRows = hydrometRecent.status === "fulfilled" ? hydrometRecent.value.rows : [];
-  // Columns: wico q, beno q, beno wf, lapo q, ceno qc, arno qc
+  // Columns: wico q, beno q, beno wf, lapo q, ceno qc, arno qc, debo q
   const col = (i: number) => recentRows.map((r) => r.values[i]);
   const benoRaw = col(1);
   const wicoFf = forwardFill(col(0), 0);
@@ -424,6 +424,18 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       }
     } else {
       console.warn("USGS returned non-JSON response payload:", rawVal.slice(0, 100));
+    }
+  }
+
+  // Below Bend (USGS 14070500 = Hydromet DEBO): fall back to Hydromet if the USGS request failed
+  if (usgsGages["14070500"].cfs === undefined) {
+    for (let i = recentRows.length - 1; i >= 0; i--) {
+      const v = recentRows[i].values[6];
+      if (Number.isFinite(v)) {
+        usgsGages["14070500"].cfs = v;
+        usgsGages["14070500"].updated = recentRows[i].date;
+        break;
+      }
     }
   }
 

@@ -233,7 +233,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
             </div>
             <div className="mt-3 pt-2 border-t border-slate-200">
               <span className="text-lg font-light font-mono text-slate-700">
-                {data.usgsGages?.["14070500"]?.cfs ? (unit === "metric" ? ((data.usgsGages["14070500"].cfs * 0.0283).toFixed(1) + " m³/s") : `${data.usgsGages["14070500"].cfs} CFS`) : "1,120 CFS"}
+                {data.usgsGages?.["14070500"]?.cfs ? (unit === "metric" ? ((data.usgsGages["14070500"].cfs * 0.0283).toFixed(1) + " m³/s") : `${data.usgsGages["14070500"].cfs} CFS`) : "—"}
               </span>
             </div>
           </div>
