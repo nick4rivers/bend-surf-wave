@@ -4,7 +4,7 @@ import {
   SURFLINE_SYSTEM_INSTRUCTIONS,
   generateAlgorithmicFallback,
   SurfReportConditions,
-} from "./surf-report-prompt";
+} from "./surf-report-prompt.js";
 
 // Cache in-memory strictly for 15s to debounce simultaneous React StrictMode mounts
 // while ensuring every browser open / refresh gets a fresh, live Gemini generation

@@ -18,7 +18,7 @@
  * as naive local strings, which is what the frontend already expects.
  */
 
-import { fetchUrl } from "./http";
+import { fetchUrl } from "./http.js";
 
 const HYDROMET_BASE = "https://www.usbr.gov/pn-bin";
 

@@ -1,7 +1,7 @@
 import type { SurfDataResponse } from "../src/types";
-import { fetchUrl } from "./_lib/http";
-import { fetchHydrometInstant, fetchHydrometDaily, forwardFill, isoDate } from "./_lib/hydromet";
-import { computeHeadOfPark, HEAD_OF_PARK_MODEL, type GageRow } from "./_lib/headOfPark";
+import { fetchUrl } from "./_lib/http.js";
+import { fetchHydrometInstant, fetchHydrometDaily, forwardFill, isoDate } from "./_lib/hydromet.js";
+import { computeHeadOfPark, HEAD_OF_PARK_MODEL, type GageRow } from "./_lib/headOfPark.js";
 
 interface CacheEntry<T> {
   data: T;
@@ -149,7 +149,11 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   ] = await Promise.allSettled([
     fetchHydrometInstant(["wico q", "beno q", "beno wf", "lapo q", "ceno qc", "arno qc"], { start: recentStart }),
     fetchHydrometDaily(["beno qd", "ceno qj", "arno qj"], yearStart, yesterday),
-    getHistoricalByYear(2013, eyer - 1),
+    // Never let the 13-year archive hold up live data; it's cached for a day once it loads
+    Promise.race([
+      getHistoricalByYear(2013, eyer - 1),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("historical archive timeout")), 8000)),
+    ]),
     fetchUrl("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=14070500,14092500,13206000&parameterCd=00060,00010"),
     fetchUrl("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7"),
     process.env.PURPLE_AIR_API_KEY
