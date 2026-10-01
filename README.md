@@ -25,11 +25,19 @@ Real-time conditions for the surf wave at the Bend Whitewater Park on the Deschu
 
 Fetched server-side in `api/surf-data.ts` (cached for 3 minutes):
 
-- **rmmanalytics.com** flow CSVs: Head of Park flow, Benham Falls (BENO) water/air temperature, and upstream gages and canals
+- **USBR Hydromet** (15-minute and daily): Benham Falls flow and water temperature (BENO), below Wickiup (WICO), Little Deschutes (LAPO), Central Oregon and Arnold canal diversions (CENO, ARNO), and Wickiup Reservoir storage
 - **USGS** instantaneous values: Deschutes River below Bend (14070500) and near Madras (14092500)
-- **USBR Hydromet:** BENO water temperature and Wickiup Reservoir storage
 - **Open-Meteo:** weather and air quality
 - **PurpleAir** sensor 61853 (optional API key)
+
+There is no gage at the park, so Head of Park flow is modeled in `api/_lib/headOfPark.ts`:
+
+```
+Q_park(t) = 0.93 × Q_BENO(t − τ) − Q_CENO(t) − Q_ARNO(t)
+τ = 20 river km ÷ 2.3 km/h ≈ 8.75 h
+```
+
+τ is the time a flow change takes to travel from Benham Falls to the park. It is calibrated from Wickiup release steps (WICO → BENO). Because of that lag, the last ~9 hours of BENO readings haven't reached the park yet, so the site can show a short outlook. All parameters can be overridden with environment variables (`HOP_BENO_FACTOR`, `HOP_BENO_TO_PARK_KM`, `HOP_CELERITY_KMH`, `HOP_LAG_HOURS`). See [docs/head-of-park-model.md](docs/head-of-park-model.md) for the calibration and for notes on the rmmanalytics estimate it replaces.
 
 The written surf report comes from `api/ai-surf-report.ts` (Google Gemini).
 
