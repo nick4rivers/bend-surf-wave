@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { FlowMethodInfo } from "./FlowMethodInfo";
 import {
   ResponsiveContainer,
   LineChart,
@@ -212,8 +213,11 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
               <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
                 4. Surf Destination
               </span>
-              <h4 className="font-bold text-emerald-950 text-sm mt-0.5">Bend Surf Wave (Park)</h4>
-              <p className="text-emerald-800 text-xs mt-1">Net flow at wave feature</p>
+              <h4 className="font-bold text-emerald-950 text-sm mt-0.5 flex items-center gap-1">
+                Bend Surf Wave (Park)
+                <FlowMethodInfo data={data} className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100" />
+              </h4>
+              <p className="text-emerald-800 text-xs mt-1">Estimated net flow at wave feature</p>
             </div>
             <div className="mt-3 pt-2 border-t border-emerald-200">
               <span className="text-xl font-bold font-mono text-emerald-800">

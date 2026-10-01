@@ -12,6 +12,7 @@ import {
 import { Waves, Calendar, Eye, TrendingUp, Maximize2 } from "lucide-react";
 import { SurfDataResponse, TimeRange, UnitType } from "../types";
 import { formatHydroDateTime } from "../utils/dateUtils";
+import { FlowMethodInfo } from "./FlowMethodInfo";
 
 interface FlowGraphProps {
   data: SurfDataResponse;
@@ -150,6 +151,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
               <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
                 Bend Surf Wave Current Flow (CFS)
               </h3>
+              <FlowMethodInfo data={data} />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Head of Park flow modeled from USBR Hydromet gages: Benham Falls (lagged for travel time) minus canal diversions
