@@ -126,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Station
                 </p>
                 <p className="text-xs font-semibold text-white">
-                  Head of Park Gage
+                  Head of Park (modeled)
                 </p>
               </div>
             </div>
@@ -160,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
               return (
                 <div
                   id="header-water-temp-badge"
-                  title="Deschutes River Water Temperature (BENO Gauge, ~10 miles south/upstream of park)"
+                  title="Deschutes River Water Temperature (BENO Gauge, ~20 river km upstream of park)"
                   className="flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 border border-slate-700 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg shadow-sm"
                 >
                   <Thermometer className="w-3.5 h-3.5 text-sky-400 shrink-0" />

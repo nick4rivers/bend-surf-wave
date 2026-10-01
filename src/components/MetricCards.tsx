@@ -68,6 +68,15 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   };
 
   const flowDiff = current.flowTrendDiff;
+
+  // Head of Park outlook: BENO readings from the last ~lagHours haven't reached the park yet
+  const outlook = current.forecast;
+  const clockTime = (s?: string) => {
+    const m = s?.match(/(\d{1,2}):(\d{2})$/);
+    if (!m) return "";
+    const h = parseInt(m[1], 10);
+    return `${((h + 11) % 12) + 1}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
+  };
   const isRising = flowDiff > 5;
   const isFalling = flowDiff < -5;
 
@@ -110,6 +119,20 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 {current.statusLabel.toUpperCase()}
               </span>
             </h2>
+            {outlook && (
+              <p id="flow-outlook" className="text-xs text-slate-300" title={`Modeled: ${outlook.benoFactor} × Benham Falls flow from ~${outlook.lagHours} h earlier (≈${outlook.benoToParkKm} river km at ~${outlook.celerityKmPerHour} km/h), minus Central Oregon and Arnold canal diversions.`}>
+                <span className="text-slate-400">Next ~{Math.round(outlook.lagHours)} h: </span>
+                {outlook.trend === "steady" ? (
+                  <>holding near <span className="font-mono text-white">{displayFlow(outlook.horizonCfs)}</span></>
+                ) : (
+                  <>
+                    {outlook.trend === "rising" ? "rising" : "dropping"} to{" "}
+                    <span className="font-mono text-white">{displayFlow(outlook.horizonCfs)}</span> by {clockTime(outlook.horizonDate)}
+                  </>
+                )}
+                <span className="text-slate-500"> · already past Benham Falls</span>
+              </p>
+            )}
             <AiSurfReportText data={data} unit={unit} />
           </div>
 
@@ -203,7 +226,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         {/* Card 2: Water Temperature */}
         <div
           onClick={onNavigateToTemp}
-          title="Water temperature recorded at BENO gauge (~10 miles south/upstream of park)"
+          title="Water temperature recorded at BENO gauge (~20 river km upstream of park)"
           className="group cursor-pointer bg-white border border-slate-200 hover:border-sky-400 rounded-xl p-5 shadow-sm transition-all flex flex-col justify-between"
         >
           <div>

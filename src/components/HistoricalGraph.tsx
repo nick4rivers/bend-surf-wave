@@ -19,6 +19,7 @@ interface HistoricalGraphProps {
 }
 
 const YEAR_COLORS: Record<string, string> = {
+  "2025": "#0f766e", // Deep teal
   "2024": "#10b981", // Emerald
   "2023": "#06b6d4", // Cyan
   "2022": "#3b82f6", // Blue
@@ -34,17 +35,18 @@ const YEAR_COLORS: Record<string, string> = {
 };
 
 export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) => {
-  const years = ["2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013"];
+  const years = ["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013"];
   
   // Surf wave threshold reference lines toggle (on by default)
   const [showThresholds, setShowThresholds] = useState<boolean>(true);
 
   // Default show recent 4 years to avoid clutter
   const [selectedYears, setSelectedYears] = useState<{ [key: string]: boolean }>({
+    "2025": true,
     "2024": true,
     "2023": true,
     "2022": true,
-    "2021": true,
+    "2021": false,
     "2020": false,
     "2019": false,
     "2018": false,
@@ -139,11 +141,11 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-sky-600" />
               <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
-                Historical Water Flows at Head of Park (2013 – 2024)
+                Historical Water Flows at Head of Park (2013 – 2025)
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              12-Year comparative hydrographs for Deschutes River flow patterns and peak runoff windows
+              13-year comparative hydrographs for Deschutes River flow patterns and peak runoff windows
             </p>
           </div>
 

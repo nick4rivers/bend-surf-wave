@@ -1,6 +1,7 @@
-import https from "https";
-import http from "http";
 import type { SurfDataResponse } from "../src/types";
+import { fetchUrl } from "./_lib/http";
+import { fetchHydrometInstant, fetchHydrometDaily, forwardFill, isoDate } from "./_lib/hydromet";
+import { computeHeadOfPark, HEAD_OF_PARK_MODEL, type GageRow } from "./_lib/headOfPark";
 
 interface CacheEntry<T> {
   data: T;
@@ -9,58 +10,41 @@ interface CacheEntry<T> {
 
 const cache: Record<string, CacheEntry<any>> = {};
 const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes cache
+const HISTORICAL_TTL_MS = 24 * 60 * 60 * 1000; // multi-year daily archive changes once a day at most
 
-export function fetchUrl(url: string, customHeaders?: Record<string, string>): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const isHttps = url.startsWith("https");
-    const client = isHttps ? https : http;
-    const req = client.get(
-      url,
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-          Accept: "application/json, text/plain, */*",
-          ...customHeaders,
-        },
-        timeout: 10000,
-      },
-      (res) => {
-        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          return fetchUrl(res.headers.location, customHeaders).then(resolve).catch(reject);
-        }
-        if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
-          return reject(new Error(`HTTP ${res.statusCode} fetching ${url}`));
-        }
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => resolve(data));
-      }
-    );
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy();
-      reject(new Error(`Timeout fetching ${url}`));
-    });
-  });
-}
+const SURF_THRESHOLDS = { surf: 650, skim: 550, awesome: 800 };
+const RECENT_DAYS = 35; // 15-min window: covers the 7d / 30d charts plus the BENO → park lag
 
-// Parse CSV text into arrays of objects
-export function parseCsv(csvText: string): Array<Record<string, string>> {
-  const lines = csvText.trim().split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) return [];
+/** Daily Head of Park estimate (no lag at daily resolution): k·BENO − CENO − ARNO */
+const dailyHeadOfPark = (beno: number, ceno: number, arno: number) =>
+  Number.isFinite(beno)
+    ? Math.max(0, Math.round((HEAD_OF_PARK_MODEL.benoFactor * beno - (Number.isFinite(ceno) ? ceno : 0) - (Number.isFinite(arno) ? arno : 0)) * 10) / 10)
+    : NaN;
 
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^["']|["']$/g, ""));
-  const records: Array<Record<string, string>> = [];
+/**
+ * Multi-year daily Head of Park hydrographs, one column per year, keyed on a
+ * leap reference year so Feb 29 has a slot. Cached for a day.
+ */
+async function getHistoricalByYear(firstYear: number, lastYear: number): Promise<Array<Record<string, any>>> {
+  const key = `historical_${firstYear}_${lastYear}`;
+  if (cache[key] && Date.now() - cache[key].timestamp < HISTORICAL_TTL_MS) return cache[key].data;
 
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(",").map((v) => v.trim().replace(/^["']|["']$/g, ""));
-    const row: Record<string, string> = {};
-    headers.forEach((h, idx) => {
-      row[h] = values[idx] ?? "";
-    });
-    records.push(row);
+  const table = await fetchHydrometDaily(["beno qd", "ceno qj", "arno qj"], `${firstYear}-01-01`, `${lastYear}-12-31`);
+  const byMmdd = new Map<string, Record<string, any>>();
+  // Reference leap year for the x-axis
+  for (let d = new Date(Date.UTC(2024, 0, 1)); d.getUTCFullYear() === 2024; d.setUTCDate(d.getUTCDate() + 1)) {
+    const mmdd = d.toISOString().slice(5, 10);
+    byMmdd.set(mmdd, { date: `2024-${mmdd}` });
   }
-  return records;
+  for (const r of table.rows) {
+    const [b, c, a] = r.values;
+    const v = dailyHeadOfPark(b, c, a);
+    const row = byMmdd.get(r.date.slice(5, 10));
+    if (row && Number.isFinite(v)) row[r.date.slice(0, 4)] = v;
+  }
+  const data = [...byMmdd.values()];
+  cache[key] = { data, timestamp: Date.now() };
+  return data;
 }
 
 // EPA standard AQI converter from PM2.5 (µg/m³)
@@ -147,36 +131,38 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   const sdy = past1YrObj.getDate();
   const usbr1YrDailyUrl = `https://www.usbr.gov/pn-bin/webarccsv.pl?parameter=wic%20af&syer=${syer}&smn=${smn}&sdy=${sdy}&eyer=${eyer}&emn=${emn}&edy=${edy}&format=2`;
 
-  // Parallel fetch from data sources
+  const recentStart = isoDate(new Date(nowObj.getTime() - RECENT_DAYS * 24 * 60 * 60 * 1000));
+  const yearStart = isoDate(past1YrObj);
+  const yesterday = isoDate(new Date(nowObj.getTime() - 24 * 60 * 60 * 1000));
+
+  // Parallel fetch from data sources (all flow/canal/temperature data direct from USBR Hydromet)
   const [
-    greenwaveYearCsv,
-    tempCsv,
-    multiYearCsv,
-    canalCsv,
-    whitewaterCsv,
+    hydrometRecent,
+    hydrometYearDaily,
+    historicalByYear,
     usgsJson,
     openMeteoWeatherJson,
     purpleAirMapJson,
     openMeteoAirJson,
-    usbrBenoWfHtml,
     usbrWicAfCsv,
     usbrWic1YrCsv,
   ] = await Promise.allSettled([
-    fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/GREENWAVE_Year.csv"),
-    fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/BENOWaterAirTemp.csv"),
-    fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/GREENWAVE_13to20Year.csv"),
-    fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/WICO_BENO_CENO_ARNO_HEAD_LAPO.csv"),
-    fetchUrl("https://rmmanalytics.com/Lleds_Water_Levels/WICO-BENO-Whitewater.csv"),
+    fetchHydrometInstant(["wico q", "beno q", "beno wf", "lapo q", "ceno qc", "arno qc"], { start: recentStart }),
+    fetchHydrometDaily(["beno qd", "ceno qj", "arno qj"], yearStart, yesterday),
+    getHistoricalByYear(2013, eyer - 1),
     fetchUrl("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=14070500,14092500,13206000&parameterCd=00060,00010"),
     fetchUrl("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7"),
     process.env.PURPLE_AIR_API_KEY
       ? fetchUrl(`https://api.purpleair.com/v1/sensors/61853?api_key=${process.env.PURPLE_AIR_API_KEY}`)
       : fetchUrl("https://map.purpleair.com/data.json?opt=1/m/i/pm25_10m/a10/c0&box=44.00,-121.36,44.10,-121.26"),
     fetchUrl("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles"),
-    fetchUrl("https://www.usbr.gov/pn-bin/v1/instant.pl?list=beno%20wf&back=480&format=dfcgi"),
     fetchUrl("https://www.usbr.gov/pn-bin/v1/instant.pl?list=wic%20af&format=realtime-graph"),
     fetchUrl(usbr1YrDailyUrl),
   ]);
+
+  if (hydrometRecent.status === "rejected") {
+    console.error("Hydromet 15-min fetch failed:", hydrometRecent.reason);
+  }
 
   // Parse Weather from Open-Meteo (Bend, Oregon in America/Los_Angeles local time)
   let weather: any = null;
@@ -221,101 +207,60 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     ? weather.current.temperature_2m
     : null;
 
-  // Parse Flow CSV
-  let flowData: Array<{
-    date: string;
-    cfs: number;
-    surfThreshold: number;
-    skimThreshold: number;
-    awesomeThreshold: number;
-  }> = [];
+  // ---------------------------------------------------------------------------
+  // Hydromet 15-min gages → Head of Park estimate (lagged BENO minus canals)
+  // ---------------------------------------------------------------------------
+  type FlowPoint = SurfDataResponse["timeSeries"]["flow"][number];
+  const withThresholds = (date: string, cfs: number): FlowPoint => ({
+    date,
+    cfs,
+    surfThreshold: SURF_THRESHOLDS.surf,
+    skimThreshold: SURF_THRESHOLDS.skim,
+    awesomeThreshold: SURF_THRESHOLDS.awesome,
+  });
 
-  if (greenwaveYearCsv.status === "fulfilled" && greenwaveYearCsv.value) {
-    const parsed = parseCsv(greenwaveYearCsv.value);
-    flowData = parsed.map((row) => {
-      const date = row["Date"] || "";
-      const cfs = parseFloat(row["CFS @ Head of Park"] || "0");
-      const surfThreshold = parseFloat(row["Surf-Time!! Be very light on your feet"] || "650");
-      const skimThreshold = parseFloat(row["Skimboards or short fins!"] || "550");
-      const awesomeThreshold = parseFloat(row["AWESOME Wave Time"] || "800");
-      return {
-        date,
-        cfs: isNaN(cfs) ? 0 : cfs,
-        surfThreshold: isNaN(surfThreshold) ? 650 : surfThreshold,
-        skimThreshold: isNaN(skimThreshold) ? 550 : skimThreshold,
-        awesomeThreshold: isNaN(awesomeThreshold) ? 800 : awesomeThreshold,
-      };
-    }).filter(r => r.date && r.cfs > 0);
+  const recentRows = hydrometRecent.status === "fulfilled" ? hydrometRecent.value.rows : [];
+  // Columns: wico q, beno q, beno wf, lapo q, ceno qc, arno qc
+  const col = (i: number) => recentRows.map((r) => r.values[i]);
+  const benoRaw = col(1);
+  const wicoFf = forwardFill(col(0), 0);
+  const lapoFf = forwardFill(col(3), 0);
+  const cenoFf = forwardFill(col(4), 0);
+  const arnoFf = forwardFill(col(5), 0);
+
+  const gageRows: GageRow[] = recentRows.map((r, i) => ({
+    date: r.date,
+    beno: benoRaw[i],
+    ceno: r.values[4],
+    arno: r.values[5],
+  }));
+  const headOfPark = computeHeadOfPark(gageRows);
+  const parkByDate = new Map(headOfPark.estimate.map((p) => [p.date, p.cfs]));
+
+  let flowData: FlowPoint[] = headOfPark.estimate.map((p) => withThresholds(p.date, p.cfs));
+  const flowForecast = headOfPark.forecast.map((p) => withThresholds(p.date, p.cfs));
+
+  // Full Year range: prepend daily estimates for the days before the 15-min window
+  if (hydrometYearDaily.status === "fulfilled") {
+    const firstRecent = flowData[0]?.date.slice(0, 10) ?? "9999-12-31";
+    const dailyPoints = hydrometYearDaily.value.rows
+      .filter((r) => r.date < firstRecent)
+      .map((r) => {
+        const [b, c, a] = r.values;
+        return withThresholds(`${r.date} 12:00`, dailyHeadOfPark(b, c, a));
+      })
+      .filter((p) => Number.isFinite(p.cfs) && p.cfs > 0);
+    flowData = [...dailyPoints, ...flowData];
   }
 
-  // Augment flowData with complete 365-day historical daily values for Full Year range
-  if (multiYearCsv.status === "fulfilled" && multiYearCsv.value && flowData.length > 0) {
-    const parsedMulti = parseCsv(multiYearCsv.value);
-    const dailyLookup: Record<string, number> = {};
-
-    parsedMulti.forEach((row) => {
-      const dStr = row["Date"] || "";
-      const cleanD = dStr.split(" ")[0] || "";
-      const mmdd = cleanD.substring(5); // "01-01"
-      const cfs2024 = parseFloat(row["2024"] || row["2023"] || "0");
-      if (mmdd && !isNaN(cfs2024) && cfs2024 > 0) {
-        dailyLookup[mmdd] = cfs2024;
-      }
-    });
-
-    const firstRecentDateStr = flowData[0].date;
-    const lastRecentDateStr = flowData[flowData.length - 1].date;
-    const firstRecentDate = new Date(firstRecentDateStr.replace(/-/g, "/"));
-    const latestDate = new Date(lastRecentDateStr.replace(/-/g, "/"));
-
-    if (!isNaN(firstRecentDate.getTime()) && !isNaN(latestDate.getTime())) {
-      const fullYearHistory: typeof flowData = [];
-      const startDate = new Date(latestDate);
-      startDate.setDate(startDate.getDate() - 365);
-
-      let cur = new Date(startDate);
-      while (cur < firstRecentDate) {
-        const yyyy = cur.getFullYear();
-        const mm = String(cur.getMonth() + 1).padStart(2, "0");
-        const dd = String(cur.getDate()).padStart(2, "0");
-        const mmdd = `${mm}-${dd}`;
-        const cfs = dailyLookup[mmdd] || (cur.getMonth() >= 4 && cur.getMonth() <= 8 ? 880 : 480);
-
-        fullYearHistory.push({
-          date: `${yyyy}-${mm}-${dd} 12:00`,
-          cfs,
-          surfThreshold: 650,
-          skimThreshold: 550,
-          awesomeThreshold: 800,
-        });
-        cur.setDate(cur.getDate() + 1);
-      }
-
-      flowData = [...fullYearHistory, ...flowData];
-    }
-  }
-
-  // Parse Real-Time USBR Hydromet BENO Water Temperature (15-min sensor observations from Benham Falls, ~10 mi upstream)
-  const benoRealWaterMap: Record<string, number> = {};
-  const benoRealHourlyMap: Record<string, number> = {};
+  // BENO water temperature (°C → °F), keyed by timestamp and hour
   const benoRealWaterList: Array<{ date: string; waterTemp: number }> = [];
-
-  if (usbrBenoWfHtml.status === "fulfilled" && usbrBenoWfHtml.value) {
-    const tableRows = [
-      ...usbrBenoWfHtml.value.matchAll(/<tr><td>(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})<\/td><td>([\d.-]+)<\/td><\/tr>/g),
-    ];
-    for (const match of tableRows) {
-      const dtStr = match[1]; // e.g. "2026-09-06 10:30"
-      const celsius = parseFloat(match[2]);
-      if (!isNaN(celsius) && celsius > -5 && celsius < 45) {
-        const fahrenheit = parseFloat(((celsius * 9) / 5 + 32).toFixed(1));
-        benoRealWaterMap[dtStr] = fahrenheit;
-        const hourPrefix = dtStr.substring(0, 13);
-        benoRealHourlyMap[`${hourPrefix}:00`] = fahrenheit;
-        benoRealWaterList.push({ date: dtStr, waterTemp: fahrenheit });
-      }
+  recentRows.forEach((r) => {
+    const c = r.values[2];
+    if (Number.isFinite(c) && c > -5 && c < 45) {
+      benoRealWaterList.push({ date: r.date, waterTemp: parseFloat(((c * 9) / 5 + 32).toFixed(1)) });
     }
-  }
+  });
 
   // Parse USBR Hydromet Wickiup Reservoir Storage (WIC AF)
   const WICKIUP_CAPACITY_AF = 200000;
@@ -414,134 +359,32 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     };
   }
 
-  // Parse Temp CSV
-  let tempData: Array<{
-    date: string;
-    waterTemp: number;
-    airTemp: number;
-    t2mm: number;
-    t32: number;
-    t43: number;
-    t54: number;
-    t65: number;
-  }> = [];
+  // Temperature series: BENO water temp + Open-Meteo hourly air temp
+  const WETSUIT_BANDS = { t2mm: 64, t32: 62, t43: 58, t54: 52, t65: 42 };
+  const tempData: SurfDataResponse["timeSeries"]["temperature"] = benoRealWaterList.map((w) => {
+    const hourKey = `${w.date.slice(0, 13)}:00`;
+    const airTemp = openMeteoHourlyMap[hourKey] ?? liveAirFromWeather ?? 65.0;
+    return { date: w.date, waterTemp: w.waterTemp, airTemp, ...WETSUIT_BANDS };
+  });
 
-  if (tempCsv.status === "fulfilled" && tempCsv.value) {
-    const parsed = parseCsv(tempCsv.value);
-    tempData = parsed.map((row) => {
-      const date = row["Date"] || "";
-      const rawWaterTemp = parseFloat(row["WATER_TEMP"] || "0");
-      const rawCsvAirTemp = parseFloat(row["Air-Temp"] || "0");
-      const t2mm = parseFloat(row["2mm Top/ Shorty/ Spring/ Skin"] || "64");
-      const t32 = parseFloat(row["2-3/2 Springsuit--FullSuit"] || "62");
-      const t43 = parseFloat(row["___3/2---4/3 Full Wetsuit  and  Boots"] || "58");
-      const t54 = parseFloat(row["4/3-5/4FullSuit_Boots_Gloves_Hood"] || "52");
-      const t65 = parseFloat(row["6/5FullSuit_Boots_Gloves_Hood"] || "42");
-
-      const hourMatch = date.match(/[\sT](\d{1,2}):/);
-      const hour = hourMatch ? parseInt(hourMatch[1], 10) : 12;
-
-      const cleanDateKey = date.trim();
-      const datePrefix = cleanDateKey.substring(0, 16);
-      const hourKey = cleanDateKey.substring(0, 13) + ":00";
-      let resolvedAirTemp: number;
-
-      if (openMeteoHourlyMap[cleanDateKey] !== undefined) {
-        resolvedAirTemp = openMeteoHourlyMap[cleanDateKey];
-      } else if (openMeteoHourlyMap[datePrefix] !== undefined) {
-        resolvedAirTemp = openMeteoHourlyMap[datePrefix];
-      } else {
-        const baseAir = !isNaN(rawCsvAirTemp) && rawCsvAirTemp > 0 ? rawCsvAirTemp : 62;
-        const airDiurnalRad = ((hour - 6.0) / 24) * 2 * Math.PI - Math.PI / 2;
-        const airDiurnalFactor = Math.sin(airDiurnalRad);
-        resolvedAirTemp = parseFloat((baseAir + airDiurnalFactor * 13.5).toFixed(1));
-      }
-
-      let waterTemp: number;
-      if (benoRealWaterMap[cleanDateKey] !== undefined) {
-        waterTemp = benoRealWaterMap[cleanDateKey];
-      } else if (benoRealWaterMap[datePrefix] !== undefined) {
-        waterTemp = benoRealWaterMap[datePrefix];
-      } else if (benoRealHourlyMap[hourKey] !== undefined) {
-        waterTemp = benoRealHourlyMap[hourKey];
-      } else {
-        waterTemp = !isNaN(rawWaterTemp) && rawWaterTemp > 0 ? rawWaterTemp : 58.0;
-      }
-
-      return {
-        date,
-        waterTemp,
-        airTemp: resolvedAirTemp,
-        t2mm,
-        t32,
-        t43,
-        t54,
-        t65,
-      };
-    }).filter(r => r.date && r.waterTemp > 0);
-
-    // Append any newer hours from the live USBR BENO stream gauge that post-date the CSV
-    if (benoRealWaterList.length > 0 && tempData.length > 0) {
-      const lastTempDate = tempData[tempData.length - 1].date;
-      const newerHourKeys = Object.keys(benoRealHourlyMap)
-        .filter((k) => k > lastTempDate)
-        .sort();
-
-      for (const hourKey of newerHourKeys) {
-        const waterT = benoRealHourlyMap[hourKey];
-        const airT = openMeteoHourlyMap[hourKey] ?? liveAirFromWeather ?? 65.0;
-        tempData.push({
-          date: hourKey,
-          waterTemp: waterT,
-          airTemp: airT,
-          t2mm: 64,
-          t32: 62,
-          t43: 58,
-          t54: 52,
-          t65: 42,
-        });
-      }
-    }
-  }
-
-  // Parse Canal / Multi-gage CSV
-  let canalData: Array<{
-    date: string;
-    wickiup: number;
-    benham: number;
-    centralOregonCanal: number;
-    arnoldCanal: number;
-    headOfPark: number;
-    littleDeschutes: number;
-  }> = [];
-
-  if (canalCsv.status === "fulfilled" && canalCsv.value) {
-    const parsed = parseCsv(canalCsv.value);
-    canalData = parsed.map((row) => ({
-      date: row["Date"] || "",
-      wickiup: parseFloat(row["below_Wickiup_Res"] || "0") || 0,
-      benham: parseFloat(row["BENO"] || "0") || 0,
-      centralOregonCanal: parseFloat(row["CENO"] || "0") || 0,
-      arnoldCanal: parseFloat(row["ARNO"] || "0") || 0,
-      headOfPark: parseFloat(row["HeadOfPark"] || "0") || 0,
-      littleDeschutes: parseFloat(row["LAPO"] || "0") || 0,
-    })).filter(r => r.date);
-  }
-
-  // Parse Multi-Year Historical CSV
-  let historicalData: Array<Record<string, any>> = [];
-  if (multiYearCsv.status === "fulfilled" && multiYearCsv.value) {
-    historicalData = parseCsv(multiYearCsv.value).map((row) => {
-      const item: Record<string, any> = { date: row["Date"] };
-      Object.keys(row).forEach((k) => {
-        if (k !== "Date") {
-          const val = parseFloat(row[k]);
-          item[k] = isNaN(val) ? null : val;
-        }
-      });
-      return item;
+  // Hydro network series (upstream gages + modeled Head of Park)
+  const canalData: SurfDataResponse["timeSeries"]["canals"] = [];
+  recentRows.forEach((r, i) => {
+    const hop = parkByDate.get(r.date);
+    if (hop === undefined || !Number.isFinite(benoRaw[i])) return;
+    canalData.push({
+      date: r.date,
+      wickiup: wicoFf[i],
+      benham: benoRaw[i],
+      centralOregonCanal: cenoFf[i],
+      arnoldCanal: arnoFf[i],
+      headOfPark: hop,
+      littleDeschutes: lapoFf[i],
     });
-  }
+  });
+
+  const historicalData: Array<Record<string, any>> =
+    historicalByYear.status === "fulfilled" ? historicalByYear.value : [];
 
   // Parse USGS Real-time Gages
   const usgsGages: Record<string, { name: string; cfs?: number; tempF?: number; updated?: string }> = {
@@ -828,7 +671,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       flowCfs: latestFlow.cfs ?? 0,
       waterTempF: latestTemp.waterTemp ?? 55.0,
       waterTempC: parseFloat(((((latestTemp.waterTemp ?? 55.0) - 32) * 5) / 9).toFixed(1)),
-      waterTempStation: "BENO (Benham Falls, ~10 mi south/upstream)",
+      waterTempStation: "BENO (Benham Falls, ~20 river km upstream)",
       airTempF: latestTemp.airTemp ?? 65,
       airTempC: parseFloat(((((latestTemp.airTemp ?? 65) - 32) * 5) / 9).toFixed(1)),
       statusRating,
@@ -837,6 +680,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       statusDescription,
       wetsuitRec,
       flowTrendDiff: parseFloat((flowTrendDiff || 0).toFixed(1)),
+      forecast: headOfPark.summary ?? undefined,
       thresholds: {
         awesome: latestFlow.awesomeThreshold || 800,
         surfTime: latestFlow.surfThreshold || 650,
@@ -846,6 +690,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     upstreamGages: latestCanal,
     timeSeries: {
       flow: flowData,
+      flowForecast,
       temperature: tempData,
       canals: canalData,
       historical: historicalData,

@@ -352,7 +352,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                 Live Water Temperature
               </span>
               <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
-                BENO Gage (~10 mi upstream)
+                BENO Gage (~20 river km upstream)
               </span>
             </div>
 

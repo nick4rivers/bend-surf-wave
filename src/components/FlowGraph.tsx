@@ -49,31 +49,43 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
       sliced = raw;
     }
 
+    // Append the modeled outlook (flow already between Benham Falls and the park).
+    // The last observed point also carries forecastCfs so the dashed line connects.
+    const forecast = data.timeSeries.flowForecast ?? [];
+    const lastObs = sliced[sliced.length - 1];
+    const combined: Array<(typeof sliced)[number] & { forecastCfs?: number; isForecast?: boolean }> = [
+      ...sliced.slice(0, -1),
+      ...(lastObs ? [{ ...lastObs, forecastCfs: forecast.length ? lastObs.cfs : undefined }] : []),
+      ...forecast.map((f) => ({ ...f, forecastCfs: f.cfs, isForecast: true })),
+    ];
+
     // Format timestamps for display
-    return sliced.map((item) => {
+    return combined.map((item) => {
       const { shortDate, shortTime, shortLabel, displayTime, displayDate } = formatHydroDateTime(
         item.date,
         timeRange
       );
 
       const val = typeof item.cfs === "number" && !isNaN(item.cfs) ? item.cfs : 0;
+      const fc = item.forecastCfs;
       return {
         ...item,
-        cfs: val,
+        cfs: item.isForecast ? undefined : val,
+        forecastMetric: typeof fc === "number" ? parseFloat((fc * 0.0283168).toFixed(2)) : undefined,
         shortDate,
         shortTime,
         shortLabel,
         displayTime,
         displayDate: displayDate || shortDate,
-        flowMetric: parseFloat((val * 0.0283168).toFixed(2)),
+        flowMetric: item.isForecast ? undefined : parseFloat((val * 0.0283168).toFixed(2)),
       };
     });
-  }, [data.timeSeries.flow, timeRange]);
+  }, [data.timeSeries.flow, data.timeSeries.flowForecast, timeRange]);
 
   // Compute statistical metrics for the selected range
   const stats = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return { min: 0, max: 0, avg: 0, current: 0 };
-    const values = filteredData.map((d) => d.cfs || 0);
+    const values = filteredData.filter((d) => !d.isForecast).map((d) => d.cfs || 0);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const sum = values.reduce((a, b) => a + b, 0);
@@ -86,7 +98,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload;
-      const cfs = point.cfs;
+      const cfs = point.isForecast ? point.forecastCfs : point.cfs;
       let status = "Firing";
       let statusBadge = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
       if (cfs < 550) {
@@ -108,9 +120,9 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
           </div>
 
           <div className="flex items-baseline justify-between pt-1">
-            <span className="text-slate-300 font-medium">River Discharge:</span>
+            <span className="text-slate-300 font-medium">{point.isForecast ? "Modeled outlook:" : "River Discharge:"}</span>
             <span className="text-lg font-bold text-white font-mono">
-              {unit === "metric" ? `${point.flowMetric} m³/s` : `${cfs} CFS`}
+              {unit === "metric" ? `${point.isForecast ? point.forecastMetric : point.flowMetric} m³/s` : `${cfs} CFS`}
             </span>
           </div>
 
@@ -140,7 +152,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Instantaneous discharge at Head of Park, Deschutes River (Bend, Oregon)
+              Head of Park flow modeled from USBR Hydromet gages: Benham Falls (lagged for travel time) minus canal diversions
             </p>
           </div>
 
@@ -306,6 +318,19 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
                 fill="url(#flowGradient)"
                 activeDot={{ r: 5, fill: "#0284c7", stroke: "#ffffff", strokeWidth: 2 }}
               />
+
+              {/* Modeled outlook: flow already between Benham Falls and the park */}
+              <Area
+                type="monotone"
+                dataKey={unit === "metric" ? "forecastMetric" : "forecastCfs"}
+                stroke="#0284c7"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                fill="none"
+                connectNulls={false}
+                isAnimationActive={false}
+                activeDot={{ r: 4, fill: "#ffffff", stroke: "#0284c7", strokeWidth: 2 }}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -314,7 +339,10 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
         <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
           <div className="flex flex-wrap items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-1 bg-sky-600 rounded-full" /> Head of Park CFS
+              <span className="w-3 h-1 bg-sky-600 rounded-full" /> Head of Park CFS (modeled)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-0 border-t-2 border-dashed border-sky-600" /> Outlook (already past Benham Falls)
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 bg-emerald-600 border-dashed" /> 800+ Firing

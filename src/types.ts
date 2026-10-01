@@ -21,6 +21,8 @@ export interface SurfDataResponse {
       icon: string;
     };
     flowTrendDiff: number;
+    /** Head of Park outlook for the next ~lagHours, from BENO readings already "in the pipe" */
+    forecast?: HeadOfParkForecast;
     thresholds: {
       awesome: number;
       surfTime: number;
@@ -38,6 +40,14 @@ export interface SurfDataResponse {
   };
   timeSeries: {
     flow: Array<{
+      date: string;
+      cfs: number;
+      surfThreshold: number;
+      skimThreshold: number;
+      awesomeThreshold: number;
+    }>;
+    /** Modeled Head of Park flow for the next ~lagHours (canals held at latest values) */
+    flowForecast?: Array<{
       date: string;
       cfs: number;
       surfThreshold: number;
@@ -115,3 +125,19 @@ export interface WickiupStorageData {
 export type UnitType = "imperial" | "metric";
 export type TimeRange = "24h" | "7d" | "30d" | "all";
 export type ActiveTab = "overview" | "flow" | "temperature" | "historical" | "lowers";
+
+export interface HeadOfParkForecast {
+  /** BENO → park travel time used by the model (hours) */
+  lagHours: number;
+  benoFactor: number;
+  benoToParkKm: number;
+  celerityKmPerHour: number;
+  asOf: string;
+  nowCfs: number;
+  horizonDate: string;
+  horizonCfs: number;
+  minCfs: number;
+  maxCfs: number;
+  trend: "rising" | "falling" | "steady";
+  changeCfs: number;
+}
