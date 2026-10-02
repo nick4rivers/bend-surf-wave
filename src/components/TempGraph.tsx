@@ -123,16 +123,24 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
     const raw = data.timeSeries.temperature;
     if (!raw || raw.length === 0) return [];
 
-    let count = raw.length;
-    if (timeRange === "24h") {
-      count = Math.min(raw.length, 24); // hourly
-    } else if (timeRange === "7d") {
-      count = Math.min(raw.length, 24 * 7);
-    } else if (timeRange === "30d") {
-      count = Math.min(raw.length, 24 * 30);
-    }
-
-    const sliced = raw.slice(-count);
+    // Filter by elapsed time, not point count: BENO water temp is 15-minute data
+    // (96 points/day), so slicing by an hourly count showed ~1/4 of the window.
+    // Timestamps are naive local strings ("YYYY-MM-DD HH:MM"); parsing them all the
+    // same way keeps the differences correct regardless of the viewer's timezone.
+    const toMs = (d: string) => {
+      const m = d.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{1,2}):(\d{2}))?/);
+      if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0));
+      const t = new Date(d).getTime();
+      return isNaN(t) ? NaN : t;
+    };
+    const windowMs = (timeRange === "24h" ? 24 : 24 * 7) * 3600 * 1000;
+    const lastMs = toMs(raw[raw.length - 1].date);
+    const sliced = isNaN(lastMs)
+      ? raw.slice(-(timeRange === "24h" ? 96 : 96 * 7))
+      : raw.filter((item) => {
+          const t = toMs(item.date);
+          return !isNaN(t) && lastMs - t <= windowMs;
+        });
 
     return sliced.map((item) => {
       const { shortDate, shortTime, shortLabel, displayTime } = formatHydroDateTime(
@@ -151,8 +159,9 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
         airTemp: aTemp,
         shortDate,
         shortTime,
-        shortLabel,
-        displayTime,
+        // 24-hour view: label the axis by clock time; tooltip shows date + time
+        shortLabel: timeRange === "24h" && shortTime ? shortTime : shortLabel,
+        displayTime: shortTime ? `${shortDate}, ${shortTime}` : displayTime,
         displayWater: unit === "metric" ? waterC : wTemp,
         displayAir: unit === "metric" ? airC : aTemp,
       };
@@ -518,7 +527,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
           {/* Time Range Filter & Toggles */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex bg-slate-100 border border-slate-200 rounded-lg p-1 text-xs">
-              {(["24h", "7d", "30d"] as TimeRange[]).map((r) => (
+              {(["7d", "24h"] as TimeRange[]).map((r) => (
                 <button
                   key={r}
                   id={`range-temp-${r}`}
@@ -529,7 +538,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  {r === "24h" ? "24 Hours" : r === "7d" ? "7 Days" : "30 Days"}
+                  {r === "24h" ? "24 Hours" : "7 Days"}
                 </button>
               ))}
             </div>
@@ -678,6 +687,10 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
             )}
           </div>
         </div>
+        <p className="mt-2 text-[10px] text-slate-400 leading-snug">
+          Water temperature is measured at the Benham Falls gage (BENO), about 20 river km upstream. Water at the park is
+          likely slightly warmer.
+        </p>
       </div>
 
       {/* Air Quality (AQI) & Smoke Advisory Section (PurpleAir Nearest Sensor) */}

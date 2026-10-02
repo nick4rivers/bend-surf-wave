@@ -121,7 +121,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             </h2>
             {outlook && (
               <p id="flow-outlook" className="text-xs text-slate-300" title={`Modeled: ${outlook.benoFactor} × Benham Falls flow from ~${outlook.lagHours} h earlier (≈${outlook.benoToParkKm} river km at ~${outlook.celerityKmPerHour} km/h), minus Central Oregon and Arnold canal diversions.`}>
-                <span className="text-slate-400">Next ~{Math.round(outlook.lagHours)} h: </span>
+                <span className="text-slate-400">Trend: </span>
                 {outlook.trend === "steady" ? (
                   <>holding near <span className="font-mono text-white">{displayFlow(outlook.horizonCfs)}</span></>
                 ) : (
@@ -130,7 +130,6 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                     <span className="font-mono text-white">{displayFlow(outlook.horizonCfs)}</span> by {clockTime(outlook.horizonDate)}
                   </>
                 )}
-                <span className="text-slate-500"> · already past Benham Falls</span>
               </p>
             )}
             <AiSurfReportText data={data} unit={unit} />
