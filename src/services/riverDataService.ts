@@ -372,8 +372,11 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
         id: "bend-park-cam",
         title: "Bend Whitewater Park Live Cam",
         location: "Colorado Dam & Surf Wave, Bend, OR (Thanks to The Bend Bulletin)",
-        embedUrl: "https://www.youtube.com/embed/r_HxcmGwYNA",
-        isLive: true,
+        // Browser-only fallback (API unreachable): The Bulletin channel's current live stream.
+        embedUrl: "https://www.youtube.com/embed/live_stream?channel=UC5NGBccFc9inD-62NMKGtVg",
+        watchUrl: "https://www.youtube.com/@bendbulletin/streams",
+        channelUrl: "https://www.youtube.com/@bendbulletin/streams",
+        isLive: null,
       },
     ],
     wickiupStorage: {

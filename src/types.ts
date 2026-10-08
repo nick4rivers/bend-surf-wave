@@ -101,7 +101,16 @@ export interface SurfDataResponse {
     title: string;
     location: string;
     embedUrl: string;
-    isLive: boolean;
+    /** Direct YouTube watch link for the current stream */
+    watchUrl?: string;
+    /** Channel's live-streams page, useful when the stream is offline */
+    channelUrl?: string;
+    /** true = confirmed live, false = confirmed offline, null = status unknown */
+    isLive: boolean | null;
+    /** ISO time the live status was last checked */
+    checkedAt?: string;
+    /** What the server-side YouTube lookup saw (debugging aid) */
+    lookupNote?: string;
   }>;
   wickiupStorage?: WickiupStorageData;
 }
