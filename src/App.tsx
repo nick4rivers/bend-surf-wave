@@ -11,6 +11,7 @@ import { LowersWaveReport } from "./components/LowersWaveReport";
 import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
 import { getSurfReport } from "./services/riverDataService";
+import { trackTabView } from "./analytics";
 import { Waves, RefreshCw, AlertCircle } from "lucide-react";
 
 export default function App() {
@@ -19,6 +20,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [unit, setUnit] = useState<UnitType>("imperial");
+
+  useEffect(() => {
+    trackTabView(activeTab);
+  }, [activeTab]);
 
   const fetchData = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
