@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import surfDataHandler from "./api/surf-data";
 import aiSurfReportHandler from "./api/ai-surf-report";
+import webcamHandler from "./api/webcam";
 
 const app = express();
 const PORT = 3000;
@@ -16,6 +17,10 @@ app.all("/api/surf-data", (req, res) => {
 
 app.all("/api/ai-surf-report", (req, res) => {
   return aiSurfReportHandler(req, res);
+});
+
+app.get("/api/webcam", (req, res) => {
+  return webcamHandler(req, res);
 });
 
 app.get("/api/health", (req, res) => {
