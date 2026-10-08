@@ -31,7 +31,8 @@ jobs:
             echo "Site API unreachable; skipping this run."; exit 0; }
           live=$(echo "$body" | jq -r '.webcams[0].isLive')
           video=$(echo "$body" | jq -r '.webcams[0].watchUrl // .webcams[0].embedUrl')
-          echo "isLive=$live video=$video"
+          note=$(echo "$body" | jq -r '.webcams[0].lookupNote // "none"')
+          echo "isLive=$live video=$video note=$note"
 
           gh label create "$LABEL" --color D93F0B --description "Park webcam stream is down" 2>/dev/null || true
           open_issue=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
@@ -42,12 +43,16 @@ jobs:
                 --title "Park webcam is offline" \
                 --body "The Bulletin's park cam stream is not live as of $(date -u '+%Y-%m-%d %H:%M UTC').
 
-          The site is showing an \"offline\" card instead of a dead player, and will switch back on its own when the stream returns. This issue closes automatically when it does.
+          Lookup saw: $note
+
+          The site keeps the player up and labels it \"Stream may be offline\"; it switches back on its own when the stream returns. This issue closes automatically when it does.
 
           If the stream is live on YouTube under a title the site doesn't recognize, check https://www.youtube.com/@bendbulletin/streams. A specific video ID can be forced with the \`PARK_CAM_VIDEO_ID\` environment variable in Vercel."
             fi
           elif [ "$live" = "true" ] && [ -n "$open_issue" ]; then
             gh issue close "$open_issue" --comment "Stream is live again ($video) as of $(date -u '+%Y-%m-%d %H:%M UTC')."
+          elif [ "$live" = "null" ]; then
+            echo "::warning::Webcam status unknown (lookup saw: $note). Not alerting."
           else
             echo "No change needed."
           fi

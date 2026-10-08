@@ -109,6 +109,8 @@ export interface SurfDataResponse {
     isLive: boolean | null;
     /** ISO time the live status was last checked */
     checkedAt?: string;
+    /** What the server-side YouTube lookup saw (debugging aid) */
+    lookupNote?: string;
   }>;
   wickiupStorage?: WickiupStorageData;
 }

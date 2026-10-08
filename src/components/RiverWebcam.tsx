@@ -1,23 +1,23 @@
 import React from "react";
-import { Video, ExternalLink, VideoOff } from "lucide-react";
+import { Video, ExternalLink } from "lucide-react";
 import { SurfDataResponse } from "../types";
 
 interface RiverWebcamProps {
   data: SurfDataResponse;
 }
 
-const FALLBACK_VIDEO_ID = "kMjtqZC1_qI"; // keep in sync with api/_lib/webcam.ts
+const CHANNEL_EMBED_URL = "https://www.youtube.com/embed/live_stream?channel=UC5NGBccFc9inD-62NMKGtVg";
 const CHANNEL_STREAMS_URL = "https://www.youtube.com/@bendbulletin/streams";
 
 export const RiverWebcam: React.FC<RiverWebcamProps> = ({ data }) => {
   const cam = data.webcams?.[0];
-  const rawEmbedUrl = cam?.embedUrl || `https://www.youtube.com/embed/${FALLBACK_VIDEO_ID}`;
-  const embedUrl = rawEmbedUrl.includes("?") ? rawEmbedUrl : `${rawEmbedUrl}?autoplay=0&mute=1`;
-  const videoId = rawEmbedUrl.match(/embed\/([^?&]+)/)?.[1] ?? FALLBACK_VIDEO_ID;
-  const watchUrl = cam?.watchUrl || `https://www.youtube.com/watch?v=${videoId}`;
+  const rawEmbedUrl = cam?.embedUrl || CHANNEL_EMBED_URL;
+  const embedUrl = /[?&](autoplay|mute)=/.test(rawEmbedUrl)
+    ? rawEmbedUrl
+    : `${rawEmbedUrl}${rawEmbedUrl.includes("?") ? "&" : "?"}autoplay=0&mute=1`;
   const channelUrl = cam?.channelUrl || CHANNEL_STREAMS_URL;
+  const watchUrl = cam?.watchUrl || channelUrl;
   const isLive = cam?.isLive ?? null;
-  const offline = isLive === false;
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
@@ -32,32 +32,16 @@ export const RiverWebcam: React.FC<RiverWebcamProps> = ({ data }) => {
 
       <div className="mt-4">
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
-          {offline ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-slate-200">
-              <VideoOff className="w-8 h-8 text-slate-400" />
-              <p className="text-sm font-semibold">The park cam stream is offline right now.</p>
-              <p className="text-xs text-slate-400 max-w-xs">
-                The Bulletin restarts it from time to time; it will reappear here automatically once it's back.
-              </p>
-              <a
-                href={channelUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-semibold text-sky-300 hover:text-sky-200 flex items-center gap-1"
-              >
-                Check The Bulletin's live streams <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          ) : (
-            <iframe
-              key={videoId}
-              src={embedUrl}
-              title="Bend Whitewater Park Live Stream - The Bulletin"
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          )}
+          {/* Always show the player: YouTube itself says "offline" if the stream is down,
+              and our server-side check can be wrong, so it must never hide a working stream. */}
+          <iframe
+            key={embedUrl}
+            src={embedUrl}
+            title="Bend Whitewater Park Live Stream - The Bulletin"
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500">
@@ -66,13 +50,13 @@ export const RiverWebcam: React.FC<RiverWebcamProps> = ({ data }) => {
             {isLive === false && <span className="w-2 h-2 rounded-full bg-amber-500" />}
             {isLive === null && <span className="w-2 h-2 rounded-full bg-slate-400" />}
             <span className="font-medium text-slate-700">
-              {isLive === true ? "Live" : isLive === false ? "Offline" : "Live cam"}
+              {isLive === true ? "Live" : isLive === false ? "Stream may be offline" : "Live cam"}
             </span>
             <span className="text-slate-400">· via The Bulletin</span>
           </div>
 
           <a
-            href={offline ? channelUrl : watchUrl}
+            href={watchUrl}
             target="_blank"
             rel="noreferrer"
             className="text-sky-600 hover:text-sky-700 font-semibold flex items-center gap-1 transition"

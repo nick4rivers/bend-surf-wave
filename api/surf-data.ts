@@ -2,7 +2,7 @@ import type { SurfDataResponse } from "../src/types";
 import { fetchUrl } from "./_lib/http.js";
 import { fetchHydrometInstant, fetchHydrometDaily, forwardFill, isoDate } from "./_lib/hydromet.js";
 import { computeHeadOfPark, HEAD_OF_PARK_MODEL, type GageRow } from "./_lib/headOfPark.js";
-import { getParkCamStatus, PARK_CAM_STREAMS_URL } from "./_lib/webcam.js";
+import { getParkCamStatus, PARK_CAM_STREAMS_URL, PARK_CAM_CHANNEL_EMBED } from "./_lib/webcam.js";
 
 interface CacheEntry<T> {
   data: T;
@@ -725,11 +725,14 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
         id: "bend-park-cam",
         title: "Bend Whitewater Park Live Cam",
         location: "Colorado Dam & Surf Wave, Bend, OR (Thanks to The Bend Bulletin)",
-        embedUrl: `https://www.youtube.com/embed/${parkCam.videoId}`,
-        watchUrl: `https://www.youtube.com/watch?v=${parkCam.videoId}`,
+        // Confirmed live → embed that exact stream. Otherwise let the viewer's browser ask
+        // YouTube for the channel's current live stream, which survives stream restarts.
+        embedUrl: parkCam.isLive ? `https://www.youtube.com/embed/${parkCam.videoId}` : PARK_CAM_CHANNEL_EMBED,
+        watchUrl: parkCam.isLive ? `https://www.youtube.com/watch?v=${parkCam.videoId}` : PARK_CAM_STREAMS_URL,
         channelUrl: PARK_CAM_STREAMS_URL,
         isLive: parkCam.isLive,
         checkedAt: parkCam.checkedAt,
+        lookupNote: parkCam.lookupNote,
       },
     ],
     wickiupStorage,

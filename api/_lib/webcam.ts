@@ -10,6 +10,8 @@ import { fetchUrl } from "./http.js";
  * with right now, and fall back to the last ID that worked.
  */
 export const PARK_CAM_CHANNEL_ID = "UC5NGBccFc9inD-62NMKGtVg"; // The Bulletin
+/** Embed that the viewer's browser resolves to whatever the channel is live with right now. */
+export const PARK_CAM_CHANNEL_EMBED = `https://www.youtube.com/embed/live_stream?channel=${PARK_CAM_CHANNEL_ID}`;
 export const PARK_CAM_STREAMS_URL = "https://www.youtube.com/@bendbulletin/streams";
 /** Last known-good stream ID (updated 2026-10-08). Only used if live lookup fails. */
 export const PARK_CAM_FALLBACK_VIDEO_ID = "kMjtqZC1_qI";
@@ -24,19 +26,39 @@ export interface ParkCamStatus {
   title?: string;
   checkedAt: string;
   source: "live-lookup" | "env-override" | "last-known";
+  /** Short explanation of what the YouTube lookup saw, for debugging from /api/surf-data */
+  lookupNote?: string;
 }
 
 let lastGoodVideoId: string | null = null;
 let cached: { status: ParkCamStatus; at: number } | null = null;
 
-/** Pure parser so it can be unit-checked without network access. */
-export function parseLivePage(html: string): { videoId: string | null; isLive: boolean; title: string | null } {
-  const videoId =
-    html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/)?.[1] ?? null;
-  const isLive = /"isLiveNow":true/.test(html) || /"isLive":true/.test(html);
+/**
+ * Pure parser so it can be checked without network access.
+ * `state` is only "live"/"offline" when the page clearly says so; anything we don't
+ * recognize (bot check, consent wall, layout change) is "unknown", never "offline".
+ */
+export function parseLivePage(html: string): {
+  videoId: string | null;
+  state: "live" | "offline" | "unknown";
+  title: string | null;
+  note: string;
+} {
+  const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? null;
+  const videoId = canonical?.match(/youtube\.com\/watch\?v=([\w-]{11})/)?.[1] ?? null;
   const rawTitle = html.match(/<meta name="title" content="([^"]*)"/)?.[1] ?? null;
   const title = rawTitle ? rawTitle.replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"') : null;
-  return { videoId, isLive, title };
+  const liveNow = /"isLiveNow":true/.test(html) || /"isLive":true/.test(html);
+  const notLiveNow = /"isLiveNow":false/.test(html) || /"isUpcoming":true/.test(html);
+
+  if (videoId && liveNow) return { videoId, state: "live", title, note: `watch page, live: ${title ?? "?"}` };
+  if (videoId && notLiveNow) return { videoId, state: "offline", title, note: `watch page, not live now: ${title ?? "?"}` };
+  if (canonical && /youtube\.com\/(channel\/|@)/.test(canonical)) {
+    // /live redirected to the channel home page: the channel has no live stream
+    return { videoId: null, state: "offline", title, note: "channel page, no live stream" };
+  }
+  const pageTitle = html.match(/<title>([^<]{0,80})/)?.[1]?.trim() ?? "no <title>";
+  return { videoId, state: "unknown", title, note: `unrecognized page (${html.length} bytes, "${pageTitle}")` };
 }
 
 export async function getParkCamStatus(): Promise<ParkCamStatus> {
@@ -63,17 +85,18 @@ export async function getParkCamStatus(): Promise<ParkCamStatus> {
         },
         6000
       );
-      const { videoId, isLive, title } = parseLivePage(html);
-      if (videoId && isLive && (!title || TITLE_MATCH.test(title))) {
+      const { videoId, state, title, note } = parseLivePage(html);
+      if (state === "live" && videoId && (!title || TITLE_MATCH.test(title))) {
         lastGoodVideoId = videoId;
-        status = { videoId, isLive: true, title: title ?? undefined, checkedAt, source: "live-lookup" };
+        status = { videoId, isLive: true, title: title ?? undefined, checkedAt, source: "live-lookup", lookupNote: note };
       } else {
-        // Page loaded fine but the channel isn't live with the park cam right now
         status = {
           videoId: lastGoodVideoId ?? PARK_CAM_FALLBACK_VIDEO_ID,
-          isLive: false,
+          // A live stream with an unexpected title is "unknown", not offline
+          isLive: state === "offline" ? false : null,
           checkedAt,
           source: "last-known",
+          lookupNote: state === "live" ? `live stream title didn't match park cam: ${title}` : note,
         };
       }
     } catch (err) {
@@ -83,6 +106,7 @@ export async function getParkCamStatus(): Promise<ParkCamStatus> {
         isLive: null,
         checkedAt,
         source: "last-known",
+        lookupNote: `lookup failed: ${(err as Error).message}`,
       };
     }
   }
