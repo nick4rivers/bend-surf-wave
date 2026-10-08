@@ -2,6 +2,7 @@ import type { SurfDataResponse } from "../src/types";
 import { fetchUrl } from "./_lib/http.js";
 import { fetchHydrometInstant, fetchHydrometDaily, forwardFill, isoDate } from "./_lib/hydromet.js";
 import { computeHeadOfPark, HEAD_OF_PARK_MODEL, type GageRow } from "./_lib/headOfPark.js";
+import { getParkCamStatus, PARK_CAM_STREAMS_URL } from "./_lib/webcam.js";
 
 interface CacheEntry<T> {
   data: T;
@@ -134,6 +135,9 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   const recentStart = isoDate(new Date(nowObj.getTime() - RECENT_DAYS * 24 * 60 * 60 * 1000));
   const yearStart = isoDate(past1YrObj);
   const yesterday = isoDate(new Date(nowObj.getTime() - 24 * 60 * 60 * 1000));
+
+  // Webcam lookup runs alongside the data fetches; it has its own 5-minute cache and never throws
+  const parkCamPromise = getParkCamStatus();
 
   // Parallel fetch from data sources (all flow/canal/temperature data direct from USBR Hydromet)
   const [
@@ -678,6 +682,8 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     }
   }
 
+  const parkCam = await parkCamPromise;
+
   const payload: SurfDataResponse = {
     spotName: "Bend Whitewater Park - Surf Wave",
     riverName: "Deschutes River, Bend, Oregon",
@@ -719,8 +725,11 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
         id: "bend-park-cam",
         title: "Bend Whitewater Park Live Cam",
         location: "Colorado Dam & Surf Wave, Bend, OR (Thanks to The Bend Bulletin)",
-        embedUrl: "https://www.youtube.com/embed/r_HxcmGwYNA",
-        isLive: true,
+        embedUrl: `https://www.youtube.com/embed/${parkCam.videoId}`,
+        watchUrl: `https://www.youtube.com/watch?v=${parkCam.videoId}`,
+        channelUrl: PARK_CAM_STREAMS_URL,
+        isLive: parkCam.isLive,
+        checkedAt: parkCam.checkedAt,
       },
     ],
     wickiupStorage,
