@@ -27,12 +27,21 @@ jobs:
       - name: Check webcam status
         run: |
           set -euo pipefail
-          body=$(curl -fsS --max-time 60 https://bendsurfreport.com/api/surf-data) || {
-            echo "Site API unreachable; skipping this run."; exit 0; }
-          live=$(echo "$body" | jq -r '.webcams[0].isLive')
-          video=$(echo "$body" | jq -r '.webcams[0].watchUrl // .webcams[0].embedUrl')
-          note=$(echo "$body" | jq -r '.webcams[0].lookupNote // "none"')
-          echo "isLive=$live video=$video note=$note"
+          # Small dedicated endpoint: just the cam's live-status lookup, not the full river data
+          body=$(curl -sS --max-time 60 -w '\n%{http_code}' https://bendsurfreport.com/api/webcam) || {
+            echo "::warning::Site unreachable; skipping this run."; exit 0; }
+          code=$(printf '%s' "$body" | tail -n1)
+          body=$(printf '%s' "$body" | sed '$d')
+          if ! printf '%s' "$body" | jq -e . >/dev/null 2>&1; then
+            echo "::warning::/api/webcam returned HTTP $code with non-JSON body; skipping. First 300 chars:"
+            printf '%s' "$body" | head -c 300; echo
+            exit 0
+          fi
+          live=$(printf '%s' "$body" | jq -r '.isLive')
+          video=$(printf '%s' "$body" | jq -r '"https://www.youtube.com/watch?v=" + (.videoId // "")')
+          note=$(printf '%s' "$body" | jq -r '.lookupNote // "none"')
+          source=$(printf '%s' "$body" | jq -r '.source // "?"')
+          echo "isLive=$live source=$source video=$video note=$note"
 
           gh label create "$LABEL" --color D93F0B --description "Park webcam stream is down" 2>/dev/null || true
           open_issue=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
