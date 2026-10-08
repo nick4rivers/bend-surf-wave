@@ -25,7 +25,7 @@ export interface ParkCamStatus {
   isLive: boolean | null;
   title?: string;
   checkedAt: string;
-  source: "live-lookup" | "env-override" | "last-known";
+  source: "youtube-api" | "live-lookup" | "env-override" | "last-known";
   /** Short explanation of what the YouTube lookup saw, for debugging from /api/surf-data */
   lookupNote?: string;
 }
@@ -61,6 +61,73 @@ export function parseLivePage(html: string): {
   return { videoId, state: "unknown", title, note: `unrecognized page (${html.length} bytes, "${pageTitle}")` };
 }
 
+const YT_API = "https://www.googleapis.com/youtube/v3";
+const SEARCH_MIN_INTERVAL_MS = 60 * 60 * 1000; // search.list costs 100 quota units; at most hourly
+let lastSearchAt = 0;
+
+/**
+ * Official YouTube Data API check (needs YOUTUBE_API_KEY). Cheap path, about 2 quota units:
+ * the channel's recent uploads (live streams appear there) plus the last known stream,
+ * then one videos.list call to see which is live. Free quota is 10,000 units/day.
+ * Returns null if the API call fails, so the caller can fall back to the page lookup.
+ */
+async function lookupViaApi(key: string, checkedAt: string): Promise<ParkCamStatus | null> {
+  try {
+    const uploads = "UU" + PARK_CAM_CHANNEL_ID.slice(2);
+    const pl = JSON.parse(
+      await fetchUrl(`${YT_API}/playlistItems?part=contentDetails&maxResults=25&playlistId=${uploads}&key=${key}`, {}, 6000)
+    );
+    const ids = new Set<string>(
+      (pl.items ?? []).map((i: any) => i.contentDetails?.videoId).filter(Boolean)
+    );
+    if (lastGoodVideoId) ids.add(lastGoodVideoId);
+    ids.add(PARK_CAM_FALLBACK_VIDEO_ID);
+
+    const findLive = async (videoIds: string[]) => {
+      const v = JSON.parse(
+        await fetchUrl(`${YT_API}/videos?part=snippet&id=${videoIds.slice(0, 50).join(",")}&key=${key}`, {}, 6000)
+      );
+      return (v.items ?? []).find(
+        (it: any) => it.snippet?.liveBroadcastContent === "live" && TITLE_MATCH.test(it.snippet?.title ?? "")
+      );
+    };
+
+    let live = await findLive([...ids]);
+    let note = `YouTube API: checked ${ids.size} recent videos`;
+
+    // Rare backstop: a live stream that somehow isn't in recent uploads
+    if (!live && Date.now() - lastSearchAt > SEARCH_MIN_INTERVAL_MS) {
+      lastSearchAt = Date.now();
+      const sr = JSON.parse(
+        await fetchUrl(
+          `${YT_API}/search?part=id&channelId=${PARK_CAM_CHANNEL_ID}&eventType=live&type=video&maxResults=5&key=${key}`,
+          {},
+          6000
+        )
+      );
+      const liveIds = (sr.items ?? []).map((i: any) => i.id?.videoId).filter(Boolean);
+      if (liveIds.length) live = await findLive(liveIds);
+      note += ", plus live search";
+    }
+
+    if (live) {
+      lastGoodVideoId = live.id;
+      return { videoId: live.id, isLive: true, title: live.snippet.title, checkedAt, source: "youtube-api", lookupNote: `${note}; live: ${live.snippet.title}` };
+    }
+    return {
+      videoId: lastGoodVideoId ?? PARK_CAM_FALLBACK_VIDEO_ID,
+      isLive: false,
+      checkedAt,
+      source: "youtube-api",
+      lookupNote: `${note}; no live park-cam stream`,
+    };
+  } catch (err) {
+    // Never echo the request URL: it contains the key
+    console.warn("YouTube API lookup failed:", (err as Error).message.replace(/key=[^&\s]+/g, "key=***"));
+    return null;
+  }
+}
+
 export async function getParkCamStatus(): Promise<ParkCamStatus> {
   const now = Date.now();
   if (cached && now - cached.at < CHECK_TTL_MS) return cached.status;
@@ -69,8 +136,13 @@ export async function getParkCamStatus(): Promise<ParkCamStatus> {
   const override = process.env.PARK_CAM_VIDEO_ID?.trim();
   let status: ParkCamStatus;
 
+  const apiKey = process.env.YOUTUBE_API_KEY?.trim();
+  const apiStatus = !override && apiKey ? await lookupViaApi(apiKey, checkedAt) : null;
+
   if (override) {
     status = { videoId: override, isLive: null, checkedAt, source: "env-override" };
+  } else if (apiStatus) {
+    status = apiStatus;
   } else {
     try {
       const html = await fetchUrl(
