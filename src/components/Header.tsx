@@ -95,9 +95,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Logo & Spot title with Last Updated from BENO discharge */}
           <div className="flex flex-col justify-center shrink-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-outfit font-bold text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
+              <p className="font-outfit font-bold text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
                 BEND SURF <span className="text-sky-400 font-semibold">WAVE</span>
-              </h1>
+              </p>
               <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
                 LIVE
               </span>
