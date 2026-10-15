@@ -1,6 +1,7 @@
 import React from "react";
 import { Waves, Activity, Thermometer, Sparkles } from "lucide-react";
 import { ActiveTab, UnitType } from "../types";
+import { AboutDialog } from "./AboutDialog";
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -95,9 +96,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Logo & Spot title with Last Updated from BENO discharge */}
           <div className="flex flex-col justify-center shrink-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-outfit font-bold text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
+              <p className="font-outfit font-bold text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
                 BEND SURF <span className="text-sky-400 font-semibold">WAVE</span>
-              </h1>
+              </p>
               <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
                 LIVE
               </span>
@@ -181,7 +182,8 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 overflow-x-auto py-2 scrollbar-none border-t border-slate-800 text-sm">
+        <div className="flex items-center gap-2 border-t border-slate-800">
+        <div className="flex flex-1 min-w-0 space-x-1 overflow-x-auto py-2 scrollbar-none text-sm">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -201,6 +203,10 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             );
           })}
+        </div>
+          <div className="shrink-0 pl-1 border-l border-slate-800">
+            <AboutDialog />
+          </div>
         </div>
       </div>
     </header>

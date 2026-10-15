@@ -9,6 +9,7 @@ import { HistoricalGraph } from "./components/HistoricalGraph";
 import { WeatherForecast } from "./components/WeatherForecast";
 import { LowersWaveReport } from "./components/LowersWaveReport";
 import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
+import { AboutSection } from "./components/AboutSection";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
 import { getSurfReport } from "./services/riverDataService";
 import { trackTabView } from "./analytics";
@@ -123,6 +124,7 @@ export default function App() {
               onNavigateToWeather={() => setActiveTab("temperature")}
               onNavigateToLowers={() => setActiveTab("lowers")}
             />
+            <AboutSection onNavigate={setActiveTab} />
           </div>
         )}
 
