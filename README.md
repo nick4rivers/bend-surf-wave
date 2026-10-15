@@ -39,7 +39,7 @@ Q_park(t) = 0.93 × Q_BENO(t − τ) − Q_CENO(t) − Q_ARNO(t)
 
 τ is the time a flow change takes to travel from Benham Falls to the park. It is calibrated from Wickiup release steps (WICO → BENO). Because of that lag, the last ~9 hours of BENO readings haven't reached the park yet, so the site can show a short outlook. All parameters can be overridden with environment variables (`HOP_BENO_FACTOR`, `HOP_BENO_TO_PARK_KM`, `HOP_CELERITY_KMH`, `HOP_LAG_HOURS`). See [docs/head-of-park-model.md](docs/head-of-park-model.md) for the calibration and for notes on the rmmanalytics estimate it replaces.
 
-The written surf report comes from `api/ai-surf-report.ts` (Google Gemini).
+The written surf report is a plain template built in the browser from the live data (`src/utils/surfReport.ts`): current flow, the ~9-hour outlook, the change from this time yesterday, today's weather, and air quality only when it reaches "Unhealthy" (AQI 151+).
 
 ## Stack
 
@@ -51,7 +51,7 @@ Requires Node.js 20 or newer.
 
 ```bash
 npm install
-cp .env.example .env   # then add your own GEMINI_API_KEY (and PURPLE_AIR_API_KEY if you have one)
+cp .env.example .env   # then add PURPLE_AIR_API_KEY if you have one (optional)
 npm run dev            # http://localhost:3000
 ```
 
