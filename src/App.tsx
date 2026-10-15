@@ -9,7 +9,6 @@ import { HistoricalGraph } from "./components/HistoricalGraph";
 import { WeatherForecast } from "./components/WeatherForecast";
 import { LowersWaveReport } from "./components/LowersWaveReport";
 import { DomainMigrationBanner } from "./components/DomainMigrationBanner";
-import { SiteIntro } from "./components/SiteIntro";
 import { AboutSection } from "./components/AboutSection";
 import { SurfDataResponse, ActiveTab, UnitType } from "./types";
 import { getSurfReport } from "./services/riverDataService";
@@ -116,7 +115,6 @@ export default function App() {
 
         {activeTab === "overview" && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            <SiteIntro />
             <MetricCards
               data={data}
               unit={unit}

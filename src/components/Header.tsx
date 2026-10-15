@@ -1,6 +1,7 @@
 import React from "react";
 import { Waves, Activity, Thermometer, Sparkles } from "lucide-react";
 import { ActiveTab, UnitType } from "../types";
+import { AboutDialog } from "./AboutDialog";
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -181,7 +182,8 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 overflow-x-auto py-2 scrollbar-none border-t border-slate-800 text-sm">
+        <div className="flex items-center gap-2 border-t border-slate-800">
+        <div className="flex flex-1 min-w-0 space-x-1 overflow-x-auto py-2 scrollbar-none text-sm">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -201,6 +203,10 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             );
           })}
+        </div>
+          <div className="shrink-0 pl-1 border-l border-slate-800">
+            <AboutDialog />
+          </div>
         </div>
       </div>
     </header>
