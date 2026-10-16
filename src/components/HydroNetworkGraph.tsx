@@ -20,6 +20,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { SurfDataResponse, TimeRange, UnitType } from "../types";
+import { GageUnavailable, UnavailableCard } from "./GageUnavailable";
 import { formatHydroDateTime } from "../utils/dateUtils";
 
 interface HydroNetworkProps {
@@ -77,14 +78,8 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
     });
   }, [data.timeSeries.canals, timeRange, unit]);
 
-  const latest = data.upstreamGages || {
-    wickiup: 1410,
-    benham: 2360,
-    centralOregonCanal: 740,
-    arnoldCanal: 110,
-    headOfPark: 905,
-    littleDeschutes: 190,
-  };
+  // Latest real readings; when the feed is stale this is the last row received (flagged below)
+  const latest = data.upstreamGages ?? data.timeSeries.canals[data.timeSeries.canals.length - 1];
 
   // Custom Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -141,8 +136,16 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
     return null;
   };
 
+  if (data.timeSeries.canals.length === 0) {
+    return <UnavailableCard title="Upper Deschutes River Flows" status={data.dataStatus?.flow} what="Upstream gage and canal data" />;
+  }
+  const flowStatus = data.dataStatus?.flow;
+
   return (
     <div className="space-y-6">
+      {flowStatus && !flowStatus.available && (
+        <GageUnavailable status={flowStatus} what="Current upstream readings" />
+      )}
       {/* Topology / Flow Diagram */}
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">

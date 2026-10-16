@@ -62,7 +62,7 @@ export default function App() {
             Retrieving Live River Data...
           </h2>
           <p className="text-xs text-slate-500">
-            Pulling instantaneous USGS discharge, Deschutes temperature, and canal gages for Bend Whitewater Park.
+            Pulling USBR Hydromet flow, Deschutes water temperature, and canal gages for Bend Whitewater Park.
           </p>
         </div>
       </div>
@@ -102,8 +102,9 @@ export default function App() {
         setUnit={setUnit}
         loading={loading}
         onRefresh={() => fetchData(true)}
-        lastUpdated={data.upstreamGages?.date || data.lastUpdated}
+        lastUpdated={data.dataStatus?.flow.lastReading ?? data.lastUpdated}
         currentCfs={data.current.flowCfs}
+        flowAvailable={data.dataStatus ? data.dataStatus.flow.available : data.current.flowCfs != null}
         statusLabel={data.current.statusLabel}
         currentWaterTempF={data.current.waterTempF}
       />

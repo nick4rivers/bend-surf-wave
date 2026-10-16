@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { Waves, Calendar, Eye, TrendingUp, Maximize2 } from "lucide-react";
 import { SurfDataResponse, TimeRange, UnitType } from "../types";
+import { GageUnavailable, UnavailableCard } from "./GageUnavailable";
 import { formatHydroDateTime } from "../utils/dateUtils";
 import { FlowMethodInfo } from "./FlowMethodInfo";
 
@@ -139,8 +140,16 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
     return null;
   };
 
+  const flowStatus = data.dataStatus?.flow;
+  if (data.timeSeries.flow.length === 0) {
+    return <UnavailableCard title="Bend Surf Wave Current Flow (CFS)" status={flowStatus} what="Flow data" />;
+  }
+
   return (
     <div className="space-y-6">
+      {flowStatus && !flowStatus.available && (
+        <GageUnavailable status={flowStatus} what="Current flow" />
+      )}
       {/* Chart Container */}
       <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-sm">
         {/* Graph Header & Controls */}
@@ -196,7 +205,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
         {/* Statistical Summary Pills */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-            <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Current Flow</span>
+            <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">{flowStatus && !flowStatus.available ? "Last Reading" : "Current Flow"}</span>
             <span className="text-base sm:text-lg font-light text-slate-900 font-mono">
               {unit === "metric" ? `${((stats.current ?? 0) * 0.0283).toFixed(1)} m³/s` : `${stats.current ?? 0} CFS`}
             </span>

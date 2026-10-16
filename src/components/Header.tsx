@@ -2,6 +2,7 @@ import React from "react";
 import { Waves, Activity, Thermometer, Sparkles } from "lucide-react";
 import { ActiveTab, UnitType } from "../types";
 import { AboutDialog } from "./AboutDialog";
+import { formatGageTime } from "./GageUnavailable";
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -11,9 +12,11 @@ interface HeaderProps {
   loading?: boolean;
   onRefresh?: () => void;
   lastUpdated?: string;
-  currentCfs?: number;
+  currentCfs?: number | null;
   statusLabel?: string;
-  currentWaterTempF?: number;
+  currentWaterTempF?: number | null;
+  /** false when the USBR flow gages are down or stale */
+  flowAvailable?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentCfs,
   statusLabel,
   currentWaterTempF,
+  flowAvailable = true,
 }) => {
   const tabs = [
     { id: "overview" as ActiveTab, label: "Live Overview", icon: Activity },
@@ -32,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: "historical" as ActiveTab, label: "Historic Flow Data", icon: Activity },
   ];
 
-  const getWaterRating = (tempF?: number) => {
+  const getWaterRating = (tempF?: number | null) => {
     if (typeof tempF !== "number" || isNaN(tempF)) return null;
     if (tempF >= 62) {
       return {
@@ -59,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const getFlowBadgeClass = (label?: string) => {
-    if (!label) return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+    if (!label || !flowAvailable) return "bg-slate-500/20 text-slate-300 border-slate-500/30";
     const l = label.toLowerCase();
     if (l.includes("firing") || l.includes("awesome")) {
       return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
@@ -87,7 +91,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const formattedUpdated = formatReadingTime(lastUpdated);
+  // Hydromet times are Pacific wall-clock strings; format them as-is so they don't shift by viewer timezone
+  const formattedUpdated = formatGageTime(lastUpdated) ?? formatReadingTime(lastUpdated);
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900 text-white shadow-lg border-b border-slate-800">
@@ -99,11 +104,25 @@ export const Header: React.FC<HeaderProps> = ({
               <p className="font-outfit font-bold text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
                 BEND SURF <span className="text-sky-400 font-semibold">WAVE</span>
               </p>
-              <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
-                LIVE
-              </span>
+              {flowAvailable ? (
+                <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
+                  LIVE
+                </span>
+              ) : (
+                <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 leading-none">
+                  GAGES DOWN
+                </span>
+              )}
             </div>
-            {formattedUpdated && (
+            {!flowAvailable && (
+              <p
+                id="header-last-updated"
+                className="text-xs text-amber-300 font-medium tracking-normal mt-1.5 leading-none"
+              >
+                USBR gage data unavailable{formattedUpdated ? ` · last reading ${formattedUpdated}` : ""}
+              </p>
+            )}
+            {flowAvailable && formattedUpdated && (
               <p
                 id="header-last-updated"
                 className="text-xs text-slate-400 font-medium tracking-normal mt-1.5 flex items-center gap-1.5 leading-none"
@@ -133,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Current Flow & Rating badge (Always visible on mobile & desktop) */}
-            {currentCfs !== undefined && (
+            {currentCfs != null && flowAvailable && (
               <div
                 id="header-flow-badge"
                 title="Deschutes River Flow at Bend Whitewater Park"
@@ -156,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* Current Water Temp & Rating badge (Always visible on mobile & desktop) */}
-            {currentWaterTempF !== undefined && (() => {
+            {currentWaterTempF != null && (() => {
               const rating = getWaterRating(currentWaterTempF);
               return (
                 <div

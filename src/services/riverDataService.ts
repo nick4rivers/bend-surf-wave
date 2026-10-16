@@ -85,288 +85,96 @@ function calculateEPAAqi(pm: number) {
 }
 
 /**
- * Direct Client-Side Fallback fetcher:
- * Executes directly in the user's browser using CORS-enabled public APIs (USGS + Open-Meteo)
- * in case the hosting environment does not support or return the /api/surf-data route.
+ * Browser-side fallback, used only when /api/surf-data can't be reached.
+ *
+ * The flow, canal, water-temperature and Wickiup data all come from USBR Hydromet, which
+ * can't be fetched from a browser (no CORS), so in this mode those readings are reported as
+ * unavailable rather than invented. Weather and air quality come from Open-Meteo, which can.
  */
 export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
-  console.info("Executing client-side direct river data fetch...");
+  console.info("Executing client-side fallback fetch (weather and air quality only)...");
 
-  const [usgsRes, weatherRes, airRes] = await Promise.allSettled([
-    fetch("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=14070500,14092500,13206000&parameterCd=00060,00010").then(async (r) => {
-      if (!r.ok) throw new Error(`USGS HTTP ${r.status}`);
-      const text = await r.text();
-      const trimmed = text.trim();
-      if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-        throw new Error("Invalid non-JSON response from USGS");
-      }
-      return JSON.parse(trimmed);
-    }),
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7").then(async (r) => {
-      if (!r.ok) throw new Error(`Weather HTTP ${r.status}`);
-      const text = await r.text();
-      const trimmed = text.trim();
-      if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-        throw new Error("Invalid non-JSON response from weather API");
-      }
-      return JSON.parse(trimmed);
-    }),
-    fetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles").then(async (r) => {
-      if (!r.ok) throw new Error(`Air Quality HTTP ${r.status}`);
-      const text = await r.text();
-      const trimmed = text.trim();
-      if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-        throw new Error("Invalid non-JSON response from air quality API");
-      }
-      return JSON.parse(trimmed);
-    }),
-  ]);
-
-  const usgsGages: Record<string, { name: string; cfs?: number; tempF?: number; updated?: string }> = {
-    "14070500": { name: "Deschutes River Below Bend (14070500)" },
-    "14092500": { name: "Deschutes River Near Madras (14092500)" },
-    "13206000": { name: "Boise River Near Boise (13206000)" },
+  const getJson = async (url: string) => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const text = (await r.text()).trim();
+    if (!text.startsWith("{") && !text.startsWith("[")) throw new Error("Non-JSON response");
+    return JSON.parse(text);
   };
 
-  let bendBelowCfs = 904.6;
-  let bendBelowTempF = 55.0;
-
-  if (usgsRes.status === "fulfilled" && usgsRes.value?.value?.timeSeries) {
-    const timeSeries = usgsRes.value.value.timeSeries;
-    for (const ts of timeSeries) {
-      const siteCode = ts?.sourceInfo?.siteCode?.[0]?.value;
-      const variableCode = ts?.variable?.variableCode?.[0]?.value;
-      const latestVal = ts?.values?.[0]?.value?.slice(-1)?.[0];
-      if (siteCode && usgsGages[siteCode] && latestVal) {
-        const numVal = parseFloat(latestVal.value);
-        if (!isNaN(numVal)) {
-          if (variableCode === "00060") {
-            usgsGages[siteCode].cfs = numVal;
-            usgsGages[siteCode].updated = latestVal.dateTime;
-            if (siteCode === "14070500") {
-              bendBelowCfs = numVal;
-            }
-          } else if (variableCode === "00010") {
-            const fahrenheit = parseFloat(((numVal * 9) / 5 + 32).toFixed(1));
-            usgsGages[siteCode].tempF = fahrenheit;
-            if (siteCode === "14070500") {
-              bendBelowTempF = fahrenheit;
-            }
-          }
-        }
-      }
-    }
-  }
+  const [weatherRes, airRes] = await Promise.allSettled([
+    getJson("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7"),
+    getJson("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles"),
+  ]);
 
   let weather: any = null;
-  let liveAirTemp = 65.0;
+  let airTempF: number | null = null;
   if (weatherRes.status === "fulfilled" && weatherRes.value) {
     weather = weatherRes.value;
-    if (typeof weather?.current?.temperature_2m === "number") {
-      liveAirTemp = weather.current.temperature_2m;
-    }
-    if (weather?.daily?.time && Array.isArray(weather.daily.time) && weather.daily.time.length > 7) {
-      const sliceLen = 7;
+    if (typeof weather?.current?.temperature_2m === "number") airTempF = weather.current.temperature_2m;
+    if (Array.isArray(weather?.daily?.time) && weather.daily.time.length > 7) {
+      const n = 7;
       weather.daily = {
-        time: weather.daily.time.slice(-sliceLen),
-        temperature_2m_max: weather.daily.temperature_2m_max?.slice(-sliceLen) || [],
-        temperature_2m_min: weather.daily.temperature_2m_min?.slice(-sliceLen) || [],
-        weather_code: weather.daily.weather_code?.slice(-sliceLen) || [],
-        sunrise: weather.daily.sunrise?.slice(-sliceLen) || [],
-        sunset: weather.daily.sunset?.slice(-sliceLen) || [],
+        time: weather.daily.time.slice(-n),
+        temperature_2m_max: weather.daily.temperature_2m_max?.slice(-n) || [],
+        temperature_2m_min: weather.daily.temperature_2m_min?.slice(-n) || [],
+        weather_code: weather.daily.weather_code?.slice(-n) || [],
+        sunrise: weather.daily.sunrise?.slice(-n) || [],
+        sunset: weather.daily.sunset?.slice(-n) || [],
       };
     }
   }
 
-  let airQualityData: any = {
-    aqi: 28,
-    rating: "Fresh",
-    category: "Good (0–50 AQI)",
-    color: "emerald",
-    description: "Pristine Cascade mountain air quality at Bend Whitewater Park.",
-    recommendation: "Ideal conditions for high-exertion river surfing & paddling. Full lung capacity!",
-    pm2_5: 6.8,
-    pm10: 9.5,
-    ozone: 40.0,
-    updatedAt: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-    source: "PurpleAir (Colorado Ave Station #61853)",
-    sourceUrl: "https://map.purpleair.com/1/m/i/pm25_10m/a10/c0?select=61853#15/44.0474/-121.3182",
-    sensorName: "Colorado Avenue",
-    sensorIndex: 61853,
-    distance: "0.17 miles from Surf Wave",
-    pm2_5_10m: 6.8,
-    pm2_5_1h: 7.2,
-  };
-
-  if (airRes.status === "fulfilled" && airRes.value?.current) {
-    const currentAir = airRes.value.current;
-    const pmVal = typeof currentAir.pm2_5 === "number" ? currentAir.pm2_5 : 5.8;
-    const epa = calculateEPAAqi(pmVal);
-    airQualityData = {
-      ...epa,
-      pm2_5: parseFloat(pmVal.toFixed(1)),
-      pm10: typeof currentAir.pm10 === "number" ? currentAir.pm10 : 8.5,
-      ozone: typeof currentAir.ozone === "number" ? currentAir.ozone : 40.0,
+  let airQuality: SurfDataResponse["airQuality"] = undefined;
+  const pm = airRes.status === "fulfilled" ? airRes.value?.current?.pm2_5 : undefined;
+  if (typeof pm === "number") {
+    const cur = airRes.status === "fulfilled" ? airRes.value.current : {};
+    airQuality = {
+      ...calculateEPAAqi(pm),
+      pm2_5: parseFloat(pm.toFixed(1)),
+      pm10: typeof cur.pm10 === "number" ? cur.pm10 : undefined,
+      ozone: typeof cur.ozone === "number" ? cur.ozone : undefined,
       updatedAt: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-      source: "Open-Meteo Atmospheric AQI (Bend, OR)",
+      source: "Open-Meteo air quality model (Bend, OR)",
       sourceUrl: "https://open-meteo.com/en/docs/air-quality-api",
-      sensorName: "Bend Atmospheric Station",
-      distance: "At Surf Wave",
-      pm2_5_10m: parseFloat(pmVal.toFixed(1)),
-      pm2_5_1h: parseFloat((pmVal * 1.05).toFixed(1)),
+      sensorName: "Open-Meteo model",
+      distance: "Bend, OR",
     };
   }
 
-  // Generate synthetic smooth hourly time series based on live observations
-  const now = new Date();
-  const flowData: SurfDataResponse["timeSeries"]["flow"] = [];
-  const tempData: SurfDataResponse["timeSeries"]["temperature"] = [];
-  const canalData: SurfDataResponse["timeSeries"]["canals"] = [];
-
-  for (let i = 48; i >= 0; i--) {
-    const t = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const dateStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")} ${String(t.getHours()).padStart(2, "0")}:00`;
-    
-    // diurnal variations
-    const hour = t.getHours();
-    const diurnalFactor = Math.sin(((hour - 6) / 24) * 2 * Math.PI);
-    const stepCfs = Math.round(bendBelowCfs + diurnalFactor * 15);
-    const stepWaterTemp = parseFloat((bendBelowTempF + diurnalFactor * 1.5).toFixed(1));
-    const stepAirTemp = parseFloat((liveAirTemp + diurnalFactor * 8.0).toFixed(1));
-
-    flowData.push({
-      date: dateStr,
-      cfs: stepCfs,
-      surfThreshold: 650,
-      skimThreshold: 550,
-      awesomeThreshold: 800,
-    });
-
-    tempData.push({
-      date: dateStr,
-      waterTemp: stepWaterTemp,
-      airTemp: stepAirTemp,
-      t2mm: 64,
-      t32: 62,
-      t43: 58,
-      t54: 52,
-      t65: 42,
-    });
-
-    canalData.push({
-      date: dateStr,
-      wickiup: 1410,
-      benham: Math.round(stepCfs + 450),
-      centralOregonCanal: 438,
-      arnoldCanal: 50,
-      headOfPark: stepCfs,
-      littleDeschutes: 47,
-    });
-  }
-
-  let statusRating = "FIRING";
-  let statusLabel = "Firing";
-  let statusColor = "emerald";
-  let statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
-
-  if (bendBelowCfs >= 800) {
-    statusRating = "FIRING";
-    statusLabel = "Firing";
-    statusColor = "emerald";
-    statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
-  } else if (bendBelowCfs >= 650) {
-    statusRating = "SURFING";
-    statusLabel = "Surfing";
-    statusColor = "sky";
-    statusDescription = "Wave is in great shape and surfing well, contact with concrete and rocks unlikely.";
-  } else if (bendBelowCfs >= 550) {
-    statusRating = "LOW-SURFABLE";
-    statusLabel = "Low-Surfable";
-    statusColor = "amber";
-    statusDescription = "Bring your foamy, skimboard, and short fins, ramp is shallow so helmets are recommended.";
-  } else {
-    statusRating = "BELOW MINIMUM";
-    statusLabel = "Below Minimum";
-    statusColor = "rose";
-    statusDescription = "Wait for more water, contact with rocks and concrete is a certainty.";
-  }
-
-  let wetsuitRec = {
-    thickness: "4/3 to 5/4 wetsuits",
-    accessories: "Booties, gloves, and hoods",
-    comfortLevel: "Cold",
-    subtext: "The Deschutes - most of the year",
-    icon: "snowflake",
+  const down = {
+    available: false,
+    stale: false,
+    lastReading: null,
+    message: "The site's data server isn't responding, so live USBR gage readings are unavailable right now.",
   };
-
-  if (bendBelowTempF >= 62) {
-    wetsuitRec = {
-      thickness: "Wetsuits optional",
-      accessories: "Boardies and bikinis recommended",
-      comfortLevel: "Balmy",
-      subtext: "Our short central OR summer days, don't miss it.",
-      icon: "sun",
-    };
-  } else if (bendBelowTempF >= 58) {
-    wetsuitRec = {
-      thickness: "3/2 wetsuits and spring suits",
-      accessories: "Booties optional",
-      comfortLevel: "Comfortable",
-      subtext: "Summer shoulder season, peak summer mornings and evenings.",
-      icon: "sun",
-    };
-  } else if (bendBelowTempF >= 54) {
-    wetsuitRec = {
-      thickness: "3/2 to 4/3 wetsuits",
-      accessories: "Booties and gloves optional",
-      comfortLevel: "Cool",
-      subtext: "Typical Spring and Fall afternoon surf sessions.",
-      icon: "cloud",
-    };
-  }
 
   return {
     spotName: "Bend Whitewater Park - Surf Wave",
     riverName: "Deschutes River, Bend, Oregon",
     coordinates: { lat: 44.0504, lng: -121.3216 },
-    lastUpdated: now.toISOString(),
+    lastUpdated: "",
+    dataStatus: { flow: { ...down }, waterTemp: { ...down }, wickiup: { ...down } },
     current: {
-      flowCfs: bendBelowCfs,
-      waterTempF: bendBelowTempF,
-      waterTempC: parseFloat((((bendBelowTempF - 32) * 5) / 9).toFixed(1)),
-      waterTempStation: "BENO (Benham Falls, ~10 mi south/upstream)",
-      airTempF: liveAirTemp,
-      airTempC: parseFloat((((liveAirTemp - 32) * 5) / 9).toFixed(1)),
-      statusRating,
-      statusLabel,
-      statusColor,
-      statusDescription,
-      wetsuitRec,
-      flowTrendDiff: 0,
-      thresholds: {
-        awesome: 800,
-        surfTime: 650,
-        skimShortFins: 550,
-      },
+      flowCfs: null,
+      waterTempF: null,
+      waterTempC: null,
+      waterTempStation: "BENO (Benham Falls, ~20 river km upstream)",
+      airTempF,
+      airTempC: airTempF === null ? null : parseFloat((((airTempF - 32) * 5) / 9).toFixed(1)),
+      statusRating: "UNAVAILABLE",
+      statusLabel: "No Data",
+      statusColor: "slate",
+      statusDescription: down.message,
+      wetsuitRec: null,
+      flowTrendDiff: null,
+      thresholds: { awesome: 800, surfTime: 650, skimShortFins: 550 },
     },
-    upstreamGages: {
-      date: now.toISOString(),
-      wickiup: 1410,
-      benham: Math.round(bendBelowCfs + 450),
-      centralOregonCanal: 438,
-      arnoldCanal: 50.2,
-      headOfPark: bendBelowCfs,
-      littleDeschutes: 47.6,
-    },
-    timeSeries: {
-      flow: flowData,
-      temperature: tempData,
-      canals: canalData,
-      historical: [],
-    },
-    usgsGages,
+    upstreamGages: null,
+    timeSeries: { flow: [], temperature: [], canals: [], historical: [] },
+    usgsGages: {},
     weather,
-    airQuality: airQualityData,
+    airQuality,
     webcams: [
       {
         id: "bend-park-cam",
@@ -379,14 +187,7 @@ export async function fetchSurfDataClientSide(): Promise<SurfDataResponse> {
         isLive: null,
       },
     ],
-    wickiupStorage: {
-      currentAcreFeet: 35575,
-      capacityAcreFeet: 200000,
-      percentOfCapacity: 17.8,
-      lastUpdated: new Date().toISOString().replace("T", " ").substring(0, 16),
-      change7d: -4646,
-      history: [],
-    },
+    wickiupStorage: undefined,
   };
 }
 

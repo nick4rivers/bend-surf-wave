@@ -23,6 +23,7 @@ import {
   Info,
 } from "lucide-react";
 import { SurfDataResponse, TimeRange, UnitType } from "../types";
+import { GageUnavailable } from "./GageUnavailable";
 import { formatHydroDateTime } from "../utils/dateUtils";
 
 interface TempGraphProps {
@@ -35,24 +36,19 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [showAirTemp, setShowAirTemp] = useState(true);
 
-  const airQuality = data.airQuality || {
-    aqi: 28,
-    rating: "Fresh",
-    category: "Good (0–50 AQI)",
-    color: "emerald",
-    description: "Pristine Cascade mountain air quality at Bend Whitewater Park.",
-    recommendation: "Ideal conditions for high-exertion river surfing & paddling. Full lung capacity!",
-    pm2_5: 6.8,
-    pm10: 9.5,
-    ozone: 40.0,
-    updatedAt: "Live",
-    source: "PurpleAir (Colorado Ave Station #61853)",
-    sourceUrl: "https://map.purpleair.com/1/m/i/pm25_10m/a10/c0?select=61853#15/44.0474/-121.3182",
-    sensorName: "Colorado Avenue",
-    sensorIndex: 61853,
-    distance: "0.17 miles from Surf Wave",
-    pm2_5_10m: 6.8,
-  };
+  // No placeholder AQI. NaN keeps every tier comparison false when air quality is unavailable.
+  const hasAqi = typeof data.airQuality?.aqi === "number";
+  const airQuality: NonNullable<SurfDataResponse["airQuality"]> = data.airQuality ?? ({
+    aqi: NaN,
+    rating: "",
+    category: "",
+    color: "slate",
+    description: "",
+    recommendation: "",
+    pm2_5: NaN,
+    updatedAt: "",
+  } as NonNullable<SurfDataResponse["airQuality"]>);
+
 
   // Standard AQI Scale tiers for River Athletes
   const aqiTiers = [
@@ -236,6 +232,9 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
 
   // Current reading
   const current = data.current;
+  // NaN makes every band comparison below false, so a missing reading never highlights a band
+  const wtF = current.waterTempF ?? NaN;
+  const hasWaterTemp = Number.isFinite(wtF);
 
   // Water rating helper based on user's 4 thresholds
   const waterRatingInfo = useMemo(() => {
@@ -367,13 +366,18 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
 
             <div className="flex items-center gap-3 mt-2">
               <span className="text-4xl sm:text-5xl font-light text-sky-600 tracking-tight font-mono">
-                {current.waterTempF}°F
+                {hasWaterTemp ? `${current.waterTempF}°F` : "--"}
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${waterRatingInfo.badgeClass}`}>
-                {waterRatingInfo.label}
-              </span>
+              {hasWaterTemp && (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${waterRatingInfo.badgeClass}`}>
+                  {waterRatingInfo.label}
+                </span>
+              )}
             </div>
 
+            {!hasWaterTemp ? (
+              <GageUnavailable className="mt-4" status={data.dataStatus?.waterTemp} what="Water temperature" />
+            ) : (
             <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
@@ -387,6 +391,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                 <span className="text-sky-700 font-bold">{waterRatingInfo.label}</span>
               </div>
             </div>
+            )}
           </div>
         </div>
 
@@ -404,7 +409,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {/* 62°F+: Balmy */}
               <div
                 className={`p-3.5 rounded-lg border transition-all ${
-                  current.waterTempF >= 62
+                  wtF >= 62
                     ? "bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-400/30 shadow-sm"
                     : "bg-slate-50 border-slate-200"
                 }`}
@@ -413,7 +418,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                   <span className="flex items-center gap-1.5 text-sm">
                     <Sun className="w-3.5 h-3.5 text-amber-500" /> 62°F+: Balmy
                   </span>
-                  {current.waterTempF >= 62 && (
+                  {wtF >= 62 && (
                     <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
                       CURRENT ZONE
                     </span>
@@ -430,7 +435,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {/* 58°F - 62°F: Comfortable */}
               <div
                 className={`p-3.5 rounded-lg border transition-all ${
-                  current.waterTempF >= 58 && current.waterTempF < 62
+                  wtF >= 58 && wtF < 62
                     ? "bg-sky-50/80 border-sky-300 ring-2 ring-sky-400/30 shadow-sm"
                     : "bg-slate-50 border-slate-200"
                 }`}
@@ -439,7 +444,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                   <span className="flex items-center gap-1.5 text-sm">
                     <Sun className="w-3.5 h-3.5 text-sky-500" /> 58°F – 62°F: Comfortable
                   </span>
-                  {current.waterTempF >= 58 && current.waterTempF < 62 && (
+                  {wtF >= 58 && wtF < 62 && (
                     <span className="text-[10px] bg-sky-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
                       CURRENT ZONE
                     </span>
@@ -456,7 +461,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {/* 54°F - 58°F: Cool */}
               <div
                 className={`p-3.5 rounded-lg border transition-all ${
-                  current.waterTempF >= 54 && current.waterTempF < 58
+                  wtF >= 54 && wtF < 58
                     ? "bg-indigo-50/80 border-indigo-300 ring-2 ring-indigo-400/30 shadow-sm"
                     : "bg-slate-50 border-slate-200"
                 }`}
@@ -465,7 +470,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                   <span className="flex items-center gap-1.5 text-sm">
                     <Cloud className="w-3.5 h-3.5 text-indigo-500" /> 54°F – 58°F: Cool
                   </span>
-                  {current.waterTempF >= 54 && current.waterTempF < 58 && (
+                  {wtF >= 54 && wtF < 58 && (
                     <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
                       CURRENT ZONE
                     </span>
@@ -482,7 +487,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {/* < 54°F: Cold */}
               <div
                 className={`p-3.5 rounded-lg border transition-all ${
-                  current.waterTempF < 54
+                  wtF < 54
                     ? "bg-blue-50/80 border-blue-300 ring-2 ring-blue-400/30 shadow-sm"
                     : "bg-slate-50 border-slate-200"
                 }`}
@@ -491,7 +496,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                   <span className="flex items-center gap-1.5 text-sm">
                     <Snowflake className="w-3.5 h-3.5 text-blue-500" /> &lt; 54°F: Cold
                   </span>
-                  {current.waterTempF < 54 && (
+                  {wtF < 54 && (
                     <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
                       CURRENT ZONE
                     </span>
@@ -559,6 +564,9 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
         </div>
 
         {/* Chart */}
+        {data.timeSeries.temperature.length === 0 ? (
+          <GageUnavailable className="mt-4" status={data.dataStatus?.waterTemp} what="Water temperature history" />
+        ) : (
         <div className="h-80 sm:h-96 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={filteredData} margin={{ top: 15, right: 20, left: -5, bottom: 5 }}>
@@ -658,6 +666,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
             </LineChart>
           </ResponsiveContainer>
         </div>
+        )}
 
         {/* Legend under graph */}
         <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
@@ -704,7 +713,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Nearest sensor: <span className="font-semibold text-slate-700">{airQuality.sensorName || "Colorado Ave"}</span> ({airQuality.distance || "0.2 mi"})
+              Source: <span className="font-semibold text-slate-700">{hasAqi ? airQuality.sensorName || "PurpleAir" : "unavailable"}</span>{hasAqi && airQuality.distance ? ` (${airQuality.distance})` : ""}
             </p>
           </div>
 
@@ -720,6 +729,12 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
         </div>
 
         {/* Current AQI Banner & Breakdown */}
+        {!hasAqi ? (
+          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900">
+            <p className="font-semibold">Air quality currently unavailable</p>
+            <p className="text-amber-800 mt-1">Neither PurpleAir nor Open-Meteo returned a reading. Check the PurpleAir map or AirNow for current smoke conditions.</p>
+          </div>
+        ) : (
         <div className={isOverview ? "mt-5" : "grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5"}>
           {/* Main AQI Badge Card */}
           <div className="bg-slate-900 text-white rounded-xl p-5 flex flex-col justify-between shadow-sm">
@@ -824,6 +839,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

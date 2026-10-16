@@ -2,6 +2,7 @@ import type { SurfDataResponse } from "../src/types";
 import { fetchUrl } from "./_lib/http.js";
 import { fetchHydrometInstant, fetchHydrometDaily, forwardFill, isoDate } from "./_lib/hydromet.js";
 import { computeHeadOfPark, HEAD_OF_PARK_MODEL, type GageRow } from "./_lib/headOfPark.js";
+import { feedStatus, naiveMs, pacificToday } from "./_lib/feedStatus.js";
 import { getParkCamStatus, PARK_CAM_STREAMS_URL, PARK_CAM_CHANNEL_EMBED } from "./_lib/webcam.js";
 
 interface CacheEntry<T> {
@@ -243,10 +244,38 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     arno: r.values[5],
   }));
   const headOfPark = computeHeadOfPark(gageRows);
+
+  // ---- Feed health: decide what is current enough to show as "now" ----
+  const lastFinite = (vals: number[]) => {
+    for (let i = vals.length - 1; i >= 0; i--) if (Number.isFinite(vals[i])) return recentRows[i].date;
+    return null;
+  };
+  let flowStatus = feedStatus(
+    headOfPark.estimate[headOfPark.estimate.length - 1]?.date ?? null,
+    "the USBR Hydromet flow gage at Benham Falls"
+  );
+  // The estimate subtracts the canal diversions; without them it would overstate park flow by
+  // hundreds of CFS in irrigation season. Canals report less often (ARNO is often late), so
+  // allow 12 h before calling them down.
+  if (flowStatus.available) {
+    const canalStatus = [feedStatus(lastFinite(col(4)), "x", 12), feedStatus(lastFinite(col(5)), "x", 12)];
+    if (canalStatus.some((c) => !c.available)) {
+      flowStatus = {
+        available: false,
+        stale: false,
+        lastReading: flowStatus.lastReading,
+        message:
+          "The USBR Hydromet canal gages (Central Oregon and Arnold canals) are not reporting, so the Head of Park flow can't be estimated right now.",
+      };
+    }
+  }
+  if (hydrometRecent.status === "rejected") {
+    flowStatus.message = "The USBR Hydromet gages (Benham Falls and the canals) are not responding right now, so current readings are unavailable.";
+  }
   const parkByDate = new Map(headOfPark.estimate.map((p) => [p.date, p.cfs]));
 
   let flowData: FlowPoint[] = headOfPark.estimate.map((p) => withThresholds(p.date, p.cfs));
-  const flowForecast = headOfPark.forecast.map((p) => withThresholds(p.date, p.cfs));
+  const flowForecast = flowStatus.available ? headOfPark.forecast.map((p) => withThresholds(p.date, p.cfs)) : [];
 
   // Full Year range: prepend daily estimates for the days before the 15-min window
   if (hydrometYearDaily.status === "fulfilled") {
@@ -270,27 +299,23 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     }
   });
 
-  // Parse USBR Hydromet Wickiup Reservoir Storage (WIC AF)
+  // Parse USBR Hydromet Wickiup Reservoir Storage (WIC AF). No placeholder values: if USBR
+  // returns nothing, wickiupStorage stays undefined and the chart says the data is unavailable.
   const WICKIUP_CAPACITY_AF = 200000;
-  let wickiupStorage: any = undefined;
+  let wickiupStorage: SurfDataResponse["wickiupStorage"] = undefined;
+  const pctOf = (af: number) => parseFloat(((af / WICKIUP_CAPACITY_AF) * 100).toFixed(1));
 
-  let currentAf = 35575;
-  let lastUpdatedStr = "2026-09-14 08:15";
-  let percentCapacity = 17.8;
-
-  // Extract current reading from real-time 15-min instant graph if available
+  let instantAf: { af: number; date: string } | null = null;
   if (usbrWicAfCsv.status === "fulfilled" && usbrWicAfCsv.value) {
     try {
       const lines = usbrWicAfCsv.value.trim().split(/\r?\n/);
       for (let i = lines.length - 1; i >= 1; i--) {
         const parts = lines[i].split(",");
         if (parts.length >= 2) {
-          const dateRaw = parts[0].trim();
+          const dateRaw = parts[0].trim().replace(/\//g, "-");
           const afVal = parseFloat(parts[1].trim());
-          if (!isNaN(afVal) && dateRaw) {
-            currentAf = Math.round(afVal);
-            percentCapacity = parseFloat(((currentAf / WICKIUP_CAPACITY_AF) * 100).toFixed(1));
-            lastUpdatedStr = dateRaw.replace(/\//g, "-");
+          if (Number.isFinite(afVal) && /^\d{4}-\d{2}-\d{2}/.test(dateRaw)) {
+            instantAf = { af: Math.round(afVal), date: dateRaw };
             break;
           }
         }
@@ -301,69 +326,40 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   }
 
   // Parse 1-year daily history from USBR webarccsv
-  const dailyHistory: Array<{
-    date: string;
-    timestamp: number;
-    acreFeet: number;
-    percent: number;
-  }> = [];
-
+  const dailyHistory: Array<{ date: string; timestamp: number; acreFeet: number; percent: number }> = [];
   if (usbrWic1YrCsv.status === "fulfilled" && usbrWic1YrCsv.value) {
     try {
-      const lines = usbrWic1YrCsv.value.split(/\r?\n/);
-      for (const line of lines) {
+      for (const line of usbrWic1YrCsv.value.split(/\r?\n/)) {
         const match = line.trim().match(/^(\d{2})\/(\d{2})\/(\d{4}),\s*([0-9.]+)/);
-        if (match) {
-          const month = match[1];
-          const day = match[2];
-          const year = match[3];
-          const af = parseFloat(match[4]);
-          if (!isNaN(af)) {
-            const isoDate = `${year}-${month}-${day}`;
-            const roundedAf = Math.round(af);
-            dailyHistory.push({
-              date: isoDate,
-              timestamp: new Date(isoDate).getTime(),
-              acreFeet: roundedAf,
-              percent: parseFloat(((roundedAf / WICKIUP_CAPACITY_AF) * 100).toFixed(1)),
-            });
-          }
-        }
+        if (!match) continue;
+        const af = parseFloat(match[4]);
+        if (!Number.isFinite(af)) continue;
+        const iso = `${match[3]}-${match[1]}-${match[2]}`;
+        const roundedAf = Math.round(af);
+        dailyHistory.push({ date: iso, timestamp: new Date(iso).getTime(), acreFeet: roundedAf, percent: pctOf(roundedAf) });
       }
     } catch (err) {
       console.error("Error parsing USBR 1-year daily Wickiup data:", err);
     }
   }
 
-  // If dailyHistory has items, ensure today's latest reading is included
-  if (dailyHistory.length > 0) {
-    const lastDaily = dailyHistory[dailyHistory.length - 1];
-    const todayIso = new Date().toISOString().slice(0, 10);
-    if (lastDaily.date !== todayIso) {
-      dailyHistory.push({
-        date: todayIso,
-        timestamp: Date.now(),
-        acreFeet: currentAf,
-        percent: percentCapacity,
-      });
-    }
+  // Newest real storage value: the 15-min reading if present, else the last daily value
+  const lastDaily = dailyHistory[dailyHistory.length - 1];
+  const latestStorage = instantAf ?? (lastDaily ? { af: lastDaily.acreFeet, date: `${lastDaily.date} 00:00` } : null);
+  // Storage changes slowly and daily values post a day late, so allow 48 h before calling it stale
+  const wickiupStatus = feedStatus(latestStorage?.date ?? null, "the USBR Hydromet Wickiup Reservoir gage", 48);
 
+  if (latestStorage) {
+    const todayIso = pacificToday();
+    if (instantAf && lastDaily && lastDaily.date !== todayIso && instantAf.date.startsWith(todayIso)) {
+      dailyHistory.push({ date: todayIso, timestamp: Date.now(), acreFeet: instantAf.af, percent: pctOf(instantAf.af) });
+    }
     wickiupStorage = {
-      currentAcreFeet: currentAf,
+      currentAcreFeet: latestStorage.af,
       capacityAcreFeet: WICKIUP_CAPACITY_AF,
-      percentOfCapacity: percentCapacity,
-      lastUpdated: lastUpdatedStr,
+      percentOfCapacity: pctOf(latestStorage.af),
+      lastUpdated: latestStorage.date,
       history: dailyHistory,
-      dailyHistory: dailyHistory,
-    };
-  } else if (usbrWicAfCsv.status === "fulfilled") {
-    wickiupStorage = {
-      currentAcreFeet: currentAf,
-      capacityAcreFeet: WICKIUP_CAPACITY_AF,
-      percentOfCapacity: percentCapacity,
-      lastUpdated: lastUpdatedStr,
-      history: [],
-      dailyHistory: [],
     };
   }
 
@@ -371,7 +367,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   const WETSUIT_BANDS = { t2mm: 64, t32: 62, t43: 58, t54: 52, t65: 42 };
   const tempData: SurfDataResponse["timeSeries"]["temperature"] = benoRealWaterList.map((w) => {
     const hourKey = `${w.date.slice(0, 13)}:00`;
-    const airTemp = openMeteoHourlyMap[hourKey] ?? liveAirFromWeather ?? 65.0;
+    const airTemp = openMeteoHourlyMap[hourKey] ?? null;
     return { date: w.date, waterTemp: w.waterTemp, airTemp, ...WETSUIT_BANDS };
   });
 
@@ -431,74 +427,60 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     }
   }
 
-  // Below Bend (USGS 14070500 = Hydromet DEBO): fall back to Hydromet if the USGS request failed
-  if (usgsGages["14070500"].cfs === undefined) {
-    for (let i = recentRows.length - 1; i >= 0; i--) {
-      const v = recentRows[i].values[6];
-      if (Number.isFinite(v)) {
-        usgsGages["14070500"].cfs = v;
-        usgsGages["14070500"].updated = recentRows[i].date;
-        break;
-      }
+  // USGS sometimes serves a site's last-ever value long after it stopped reporting (14070500
+  // currently returns a 1991 reading). Drop anything older than 2 days rather than show it as live.
+  for (const g of Object.values(usgsGages)) {
+    const t = g.updated ? Date.parse(g.updated) : NaN;
+    if (!Number.isFinite(t) || Date.now() - t > 48 * 3.6e6) {
+      delete g.cfs;
+      delete g.tempF;
+      delete g.updated;
     }
   }
 
-  // Latest readings calculation
-  const latestFlow = flowData.slice(-1)[0] || {
-    date: new Date().toISOString(),
-    cfs: 904.6,
-    surfThreshold: 650,
-    skimThreshold: 550,
-    awesomeThreshold: 800,
-  };
-
-  const latestTemp = tempData.slice(-1)[0] || {
-    date: new Date().toISOString(),
-    waterTemp: 59.1,
-    airTemp: liveAirFromWeather ?? 68.0,
-    t2mm: 64,
-    t32: 62,
-    t43: 58,
-    t54: 52,
-    t65: 42,
-  };
-
-  if (benoRealWaterList.length > 0) {
-    const latestBenoReading = benoRealWaterList[benoRealWaterList.length - 1];
-    latestTemp.waterTemp = latestBenoReading.waterTemp;
-    latestTemp.date = latestBenoReading.date;
+  // Below Bend (USGS 14070500 = Hydromet DEBO): fall back to Hydromet when USGS has nothing current
+  if (usgsGages["14070500"].cfs === undefined) {
+    const debo = col(6);
+    const lastDebo = lastFinite(debo);
+    if (lastDebo && feedStatus(lastDebo, "x").available) {
+      const i = recentRows.findIndex((r) => r.date === lastDebo);
+      usgsGages["14070500"].cfs = debo[i];
+      usgsGages["14070500"].updated = lastDebo;
+    }
   }
 
-  if (liveAirFromWeather !== null) {
-    latestTemp.airTemp = liveAirFromWeather;
-  }
+  // ---- Current readings: real and recent, or null. Never a placeholder. ----
+  const waterStatus = feedStatus(
+    benoRealWaterList[benoRealWaterList.length - 1]?.date ?? null,
+    "the USBR Hydromet water-temperature gage at Benham Falls"
+  );
+  if (hydrometRecent.status === "rejected") waterStatus.message = flowStatus.message;
 
-  const latestCanal = canalData.slice(-1)[0] || {
-    date: new Date().toISOString(),
-    wickiup: 1410,
-    benham: 1510,
-    centralOregonCanal: 438,
-    arnoldCanal: 50.2,
-    headOfPark: 904.6,
-    littleDeschutes: 47.6,
-  };
+  const latestEstimate = headOfPark.estimate[headOfPark.estimate.length - 1];
+  const flowCfs: number | null = flowStatus.available && latestEstimate ? latestEstimate.cfs : null;
+  const waterTempF: number | null = waterStatus.available ? benoRealWaterList[benoRealWaterList.length - 1].waterTemp : null;
+  const airTempF: number | null = liveAirFromWeather;
 
-  let statusRating = "FIRING";
-  let statusLabel = "Firing";
-  let statusColor = "emerald";
-  let statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
+  const latestCanal = flowStatus.available ? canalData[canalData.length - 1] ?? null : null;
 
-  if (latestFlow.cfs >= 800) {
+  let statusRating = "UNAVAILABLE";
+  let statusLabel = "No Data";
+  let statusColor = "slate";
+  let statusDescription = flowStatus.message ?? "Live flow data is unavailable right now.";
+
+  if (flowCfs === null) {
+    // keep the "unavailable" status above
+  } else if (flowCfs >= 800) {
     statusRating = "FIRING";
     statusLabel = "Firing";
     statusColor = "emerald";
     statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
-  } else if (latestFlow.cfs >= 650) {
+  } else if (flowCfs >= 650) {
     statusRating = "SURFING";
     statusLabel = "Surfing";
     statusColor = "sky";
     statusDescription = "Wave is in great shape and surfing well, contact with concrete and rocks unlikely.";
-  } else if (latestFlow.cfs >= 550) {
+  } else if (flowCfs >= 550) {
     statusRating = "LOW-SURFABLE";
     statusLabel = "Low-Surfable";
     statusColor = "amber";
@@ -510,16 +492,10 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     statusDescription = "Wait for more water, contact with rocks and concrete is a certainty.";
   }
 
-  let wetsuitRec = {
-    thickness: "4/3 to 5/4 wetsuits",
-    accessories: "Booties, gloves, and hoods",
-    comfortLevel: "Cold",
-    subtext: "The Deschutes - most of the year",
-    icon: "snowflake",
-  };
-
-  const wTemp = latestTemp.waterTemp;
-  if (wTemp >= 62) {
+  let wetsuitRec: SurfDataResponse["current"]["wetsuitRec"] = null;
+  if (waterTempF === null) {
+    // no recommendation without a real water temperature
+  } else if (waterTempF >= 62) {
     wetsuitRec = {
       thickness: "Wetsuits optional",
       accessories: "Boardies and bikinis recommended",
@@ -527,7 +503,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       subtext: "Our short central OR summer days, don't miss it.",
       icon: "sun",
     };
-  } else if (wTemp >= 58) {
+  } else if (waterTempF >= 58) {
     wetsuitRec = {
       thickness: "3/2 wetsuits and spring suits",
       accessories: "Booties optional",
@@ -535,7 +511,7 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       subtext: "Summer shoulder season, peak summer mornings and evenings.",
       icon: "sun",
     };
-  } else if (wTemp >= 54) {
+  } else if (waterTempF >= 54) {
     wetsuitRec = {
       thickness: "3/2 to 4/3 wetsuits",
       accessories: "Booties and gloves optional",
@@ -553,30 +529,21 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     };
   }
 
-  const recent24hFlows = flowData.slice(-96);
-  const flowTrendDiff = recent24hFlows.length > 4
-    ? latestFlow.cfs - recent24hFlows[0].cfs
-    : 0;
+  // Change vs. the estimate closest to 24 h earlier (within 1 h); by time, not by point count
+  let flowTrendDiff: number | null = null;
+  if (flowCfs !== null && latestEstimate) {
+    const target = naiveMs(latestEstimate.date) - 24 * 3.6e6;
+    let best: { cfs: number; gap: number } | null = null;
+    for (const p of headOfPark.estimate) {
+      const gap = Math.abs(naiveMs(p.date) - target);
+      if (!best || gap < best.gap) best = { cfs: p.cfs, gap };
+    }
+    if (best && best.gap <= 3.6e6) flowTrendDiff = parseFloat((flowCfs - best.cfs).toFixed(1));
+  }
 
-  let airQualityData: any = {
-    aqi: 28,
-    rating: "Fresh",
-    category: "Good (0–50 AQI)",
-    color: "emerald",
-    description: "Pristine Cascade mountain air quality at Bend Whitewater Park.",
-    recommendation: "Ideal conditions for high-exertion river surfing & paddling. Full lung capacity!",
-    pm2_5: 6.8,
-    pm10: 9.5,
-    ozone: 40.0,
-    updatedAt: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-    source: "PurpleAir (Colorado Ave Station #61853)",
-    sourceUrl: "https://map.purpleair.com/1/m/i/pm25_10m/a10/c0?select=61853#15/44.0474/-121.3182",
-    sensorName: "Colorado Avenue",
-    sensorIndex: 61853,
-    distance: "0.17 miles from Surf Wave",
-    pm2_5_10m: 6.8,
-    pm2_5_1h: 7.2,
-  };
+  // No default: if neither PurpleAir nor Open-Meteo answers, air quality is reported as unavailable
+  let airQualityData: any = undefined;
+
 
   let parsedFromPurpleAir = false;
 
@@ -657,9 +624,10 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     if (rawVal.startsWith("{") || rawVal.startsWith("[")) {
       try {
         const aq = JSON.parse(rawVal);
-        const pmVal = typeof aq?.current?.pm2_5 === "number" ? aq.current.pm2_5 : 5.2;
-        const pm10 = typeof aq?.current?.pm10 === "number" ? parseFloat(aq.current.pm10.toFixed(1)) : 8.0;
-        const ozone = typeof aq?.current?.ozone === "number" ? parseFloat(aq.current.ozone.toFixed(1)) : 82.0;
+        if (typeof aq?.current?.pm2_5 !== "number") throw new Error("Open-Meteo returned no PM2.5");
+        const pmVal: number = aq.current.pm2_5;
+        const pm10 = typeof aq?.current?.pm10 === "number" ? parseFloat(aq.current.pm10.toFixed(1)) : undefined;
+        const ozone = typeof aq?.current?.ozone === "number" ? parseFloat(aq.current.ozone.toFixed(1)) : undefined;
 
         const epa = calculateEPAAqi(pmVal);
         airQualityData = {
@@ -688,25 +656,27 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     spotName: "Bend Whitewater Park - Surf Wave",
     riverName: "Deschutes River, Bend, Oregon",
     coordinates: { lat: 44.0504, lng: -121.3216 },
-    lastUpdated: latestFlow.date || new Date().toISOString(),
+    // Newest real BENO reading behind the park estimate (empty when none came back)
+    lastUpdated: flowStatus.lastReading ?? "",
+    dataStatus: { flow: flowStatus, waterTemp: waterStatus, wickiup: wickiupStatus },
     current: {
-      flowCfs: latestFlow.cfs ?? 0,
-      waterTempF: latestTemp.waterTemp ?? 55.0,
-      waterTempC: parseFloat(((((latestTemp.waterTemp ?? 55.0) - 32) * 5) / 9).toFixed(1)),
+      flowCfs,
+      waterTempF,
+      waterTempC: waterTempF === null ? null : parseFloat((((waterTempF - 32) * 5) / 9).toFixed(1)),
       waterTempStation: "BENO (Benham Falls, ~20 river km upstream)",
-      airTempF: latestTemp.airTemp ?? 65,
-      airTempC: parseFloat(((((latestTemp.airTemp ?? 65) - 32) * 5) / 9).toFixed(1)),
+      airTempF,
+      airTempC: airTempF === null ? null : parseFloat((((airTempF - 32) * 5) / 9).toFixed(1)),
       statusRating,
       statusLabel,
       statusColor,
       statusDescription,
       wetsuitRec,
-      flowTrendDiff: parseFloat((flowTrendDiff || 0).toFixed(1)),
-      forecast: headOfPark.summary ?? undefined,
+      flowTrendDiff,
+      forecast: flowStatus.available ? headOfPark.summary ?? undefined : undefined,
       thresholds: {
-        awesome: latestFlow.awesomeThreshold || 800,
-        surfTime: latestFlow.surfThreshold || 650,
-        skimShortFins: latestFlow.skimThreshold || 550,
+        awesome: SURF_THRESHOLDS.awesome,
+        surfTime: SURF_THRESHOLDS.surf,
+        skimShortFins: SURF_THRESHOLDS.skim,
       },
     },
     upstreamGages: latestCanal,
