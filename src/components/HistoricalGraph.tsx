@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Activity, Calendar, Sparkles, Filter, Check, Eye, Waves } from "lucide-react";
 import { SurfDataResponse, UnitType } from "../types";
+import { GageUnavailable, UnavailableCard } from "./GageUnavailable";
 
 interface HistoricalGraphProps {
   data: SurfDataResponse;
@@ -132,6 +133,16 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
     }
     return null;
   };
+
+  if (!data.timeSeries.historical || data.timeSeries.historical.length === 0) {
+    return (
+      <UnavailableCard
+        title="Historical Water Flows at Head of Park"
+        status={data.dataStatus?.flow.available === false && data.dataStatus.flow.lastReading === null ? data.dataStatus.flow : undefined}
+        what="The historical flow archive"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

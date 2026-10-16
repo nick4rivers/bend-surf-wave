@@ -17,6 +17,7 @@ import { SurfDataResponse, UnitType } from "../types";
 import { LowersQuickCard } from "./LowersQuickCard";
 import { RiverWebcam } from "./RiverWebcam";
 import { SurfReportText } from "./SurfReportText";
+import { GageUnavailable } from "./GageUnavailable";
 
 interface MetricCardsProps {
   data: SurfDataResponse;
@@ -39,16 +40,15 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 }) => {
   const current = data.current;
   const upstream = data.upstreamGages;
-  const airQuality = data.airQuality || {
-    aqi: 25,
-    rating: "Fresh",
-    category: "Good (0–50 AQI)",
-    color: "emerald",
-    description: "Pristine Cascade mountain air.",
-    recommendation: "Ideal conditions for high-exertion river surfing.",
-    pm2_5: 1.5,
-    updatedAt: "Live",
-  };
+  const airQuality = data.airQuality;
+  // Real readings or null. Every comparison below goes through these so a missing value never
+  // lands in a band (in JS, null < 550 is true).
+  const flowCfs = typeof current.flowCfs === "number" && Number.isFinite(current.flowCfs) ? current.flowCfs : null;
+  const hasFlow = flowCfs !== null;
+  const hasAqi = typeof airQuality?.aqi === "number";
+  // Unavailable AQI renders neutral ("--" in the slate/default color band below)
+  const aq = airQuality ?? ({ aqi: -1, rating: "", pm2_5: NaN } as NonNullable<typeof airQuality>);
+  const inBand = (lo: number, hi = Infinity) => hasFlow && flowCfs! >= lo && flowCfs! < hi;
 
   // Convert helpers
   const displayFlow = (cfs: number | null | undefined) => {
@@ -67,7 +67,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
     return `${tempF.toFixed(1)}°F`;
   };
 
-  const flowDiff = current.flowTrendDiff;
+  const flowDiff = typeof current.flowTrendDiff === "number" ? current.flowTrendDiff : null;
 
   // Head of Park outlook: BENO readings from the last ~lagHours haven't reached the park yet
   const outlook = current.forecast;
@@ -77,8 +77,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
     const h = parseInt(m[1], 10);
     return `${((h + 11) % 12) + 1}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
   };
-  const isRising = flowDiff > 5;
-  const isFalling = flowDiff < -5;
+  const isRising = flowDiff !== null && flowDiff > 5;
+  const isFalling = flowDiff !== null && flowDiff < -5;
 
   return (
     <div className="space-y-6">
@@ -90,11 +90,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                current.flowCfs >= 800
+                !hasFlow
+                  ? "bg-slate-500/20 text-slate-300 border border-slate-400/30"
+                  : flowCfs >= 800
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                  : current.flowCfs >= 650
+                  : flowCfs >= 650
                   ? "bg-sky-500/20 text-sky-300 border border-sky-400/30"
-                  : current.flowCfs >= 550
+                  : flowCfs >= 550
                   ? "bg-amber-500/20 text-amber-300 border border-amber-400/30"
                   : "bg-rose-500/20 text-rose-300 border border-rose-400/30"
               }`}>
@@ -105,21 +107,30 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 Firing Threshold: &gt;{unit === "metric" ? (current.thresholds.awesome * 0.0283).toFixed(1) + " m³/s" : `${current.thresholds.awesome} CFS`}
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-light text-white tracking-tight">
-              Bend Surf Wave is{" "}
-              <span className={`font-semibold ${
-                current.flowCfs >= 800
-                  ? "text-emerald-400"
-                  : current.flowCfs >= 650
-                  ? "text-sky-400"
-                  : current.flowCfs >= 550
-                  ? "text-amber-400"
-                  : "text-rose-400"
-              }`}>
-                {current.statusLabel.toUpperCase()}
-              </span>
-            </h2>
-            {outlook && (
+            {hasFlow ? (
+              <h2 className="text-2xl sm:text-3xl font-light text-white tracking-tight">
+                Bend Surf Wave is{" "}
+                <span className={`font-semibold ${
+                  flowCfs >= 800
+                    ? "text-emerald-400"
+                    : flowCfs >= 650
+                    ? "text-sky-400"
+                    : flowCfs >= 550
+                    ? "text-amber-400"
+                    : "text-rose-400"
+                }`}>
+                  {current.statusLabel.toUpperCase()}
+                </span>
+              </h2>
+            ) : (
+              <>
+                <h2 className="text-2xl sm:text-3xl font-light text-white tracking-tight">
+                  Surf Wave flow is <span className="font-semibold text-slate-300">UNAVAILABLE</span>
+                </h2>
+                <GageUnavailable dark status={data.dataStatus?.flow} what="Live flow data" className="max-w-2xl" />
+              </>
+            )}
+            {hasFlow && outlook && (
               <p id="flow-outlook" className="text-xs text-slate-300" title={`Modeled: ${outlook.benoFactor} × Benham Falls flow from ~${outlook.lagHours} h earlier (≈${outlook.benoToParkKm} river km at ~${outlook.celerityKmPerHour} km/h), minus Central Oregon and Arnold canal diversions.`}>
                 <span className="text-slate-400">Trend: </span>
                 {outlook.trend === "steady" ? (
@@ -189,7 +200,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-3xl sm:text-4xl font-light text-slate-900 tracking-tight">
-                {unit === "metric" ? ((current.flowCfs ?? 0) * 0.0283168).toFixed(1) : (current.flowCfs ?? 0)}
+                {!hasFlow ? "--" : unit === "metric" ? (flowCfs * 0.0283168).toFixed(1) : flowCfs}
               </span>
               <span className="text-sm font-normal text-slate-500">
                 {unit === "metric" ? "m³/s" : "cfs"}
@@ -203,16 +214,16 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                     isRising ? "text-emerald-600" : isFalling ? "text-amber-600" : "text-slate-500"
                   }`}
                 >
-                  {flowDiff > 0 ? `+${flowDiff}` : flowDiff} CFS (24h)
+                  {!hasFlow ? "Gage data unavailable" : flowDiff === null ? "24h change n/a" : `${flowDiff > 0 ? `+${flowDiff}` : flowDiff} CFS (24h)`}
                 </span>
               </div>
-              <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              {hasFlow && <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className={`h-full ${
                     isRising ? "bg-emerald-500 w-full" : isFalling ? "bg-amber-500 w-3/4" : "bg-sky-500 w-1/2"
                   }`}
                 />
-              </div>
+              </div>}
             </div>
           </div>
 
@@ -244,7 +255,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-3xl sm:text-4xl font-light text-sky-600 tracking-tight">
-                {unit === "metric" ? `${current.waterTempC ?? 0}` : `${(current.waterTempF ?? 0).toFixed(1)}`}
+                {current.waterTempF == null ? "--" : unit === "metric" ? `${current.waterTempC}` : `${current.waterTempF.toFixed(1)}`}
               </span>
               <span className="text-sm font-normal text-slate-500">
                 {unit === "metric" ? "°C" : "°F"}
@@ -253,17 +264,19 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
               <span className="text-[10px] text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded truncate max-w-[130px]">
-                {current.wetsuitRec?.thickness || "3/2mm or 4/3mm"}
+                {current.wetsuitRec?.thickness || "Gage data unavailable"}
               </span>
-              <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-sky-500 w-3/4" />
-              </div>
+              {current.waterTempF != null && (
+                <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-sky-500 w-3/4" />
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mt-3 pt-2 text-[11px] text-slate-500 flex items-center justify-between">
             <span>Thermal Comfort</span>
-            <span className="text-emerald-600 font-semibold">{current.wetsuitRec?.comfortLevel || "Moderate"}</span>
+            <span className="text-emerald-600 font-semibold">{current.wetsuitRec?.comfortLevel || "--"}</span>
           </div>
         </div>
 
@@ -285,7 +298,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-3xl sm:text-4xl font-light text-slate-800 tracking-tight">
-                {unit === "metric" ? `${((((current.airTempF ?? 0) - 32) * 5) / 9).toFixed(1)}` : `${(current.airTempF ?? 0).toFixed(0)}`}
+                {current.airTempF == null ? "--" : unit === "metric" ? `${(((current.airTempF - 32) * 5) / 9).toFixed(1)}` : `${current.airTempF.toFixed(0)}`}
               </span>
               <span className="text-sm font-normal text-slate-500">
                 {unit === "metric" ? "°C" : "°F"}
@@ -297,10 +310,10 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <Droplets className="w-3.5 h-3.5 text-sky-500" />
                 {data.weather?.current?.wind_speed_10m !== undefined
                   ? `${data.weather.current.wind_speed_10m} mph wind`
-                  : "Calm"}
+                  : "Wind n/a"}
               </span>
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                UV: {data.weather?.current?.uv_index !== undefined ? data.weather.current.uv_index : "Moderate"}
+                UV: {data.weather?.current?.uv_index !== undefined ? data.weather.current.uv_index : "n/a"}
               </span>
             </div>
           </div>
@@ -308,7 +321,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           <div className="mt-3 pt-2 text-[11px] text-slate-500 flex items-center justify-between">
             <span>Dawn Patrol</span>
             <span className="text-slate-800 font-medium">
-              Sunrise: {data.weather?.daily?.sunrise?.[0]?.split("T")?.[1] || "06:25 AM"}
+              Sunrise: {data.weather?.daily?.sunrise?.[0]?.split("T")?.[1] || "--"}
             </span>
           </div>
         </div>
@@ -332,19 +345,21 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             <div className="flex items-baseline justify-between mt-1">
               <div className="flex items-baseline gap-1.5">
                 <span className={`text-3xl sm:text-4xl font-light tracking-tight ${
-                  airQuality.aqi <= 50
+                  !hasAqi
+                    ? "text-slate-400 font-normal"
+                    : aq.aqi <= 50
                     ? "text-emerald-600 font-normal"
-                    : airQuality.aqi <= 100
+                    : aq.aqi <= 100
                     ? "text-amber-600 font-normal"
-                    : airQuality.aqi <= 150
+                    : aq.aqi <= 150
                     ? "text-orange-600 font-normal"
-                    : airQuality.aqi <= 200
+                    : aq.aqi <= 200
                     ? "text-rose-600 font-normal"
-                    : airQuality.aqi <= 300
+                    : aq.aqi <= 300
                     ? "text-purple-600 font-normal"
                     : "text-rose-900 font-normal"
                 }`}>
-                  {airQuality.aqi}
+                  {hasAqi ? aq.aqi : "--"}
                 </span>
                 <span className="text-xs font-semibold text-slate-400 font-mono">
                   AQI
@@ -352,19 +367,21 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               </div>
 
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                airQuality.aqi <= 50
+                !hasAqi
+                  ? "bg-slate-50 text-slate-500 border-slate-200"
+                  : aq.aqi <= 50
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : airQuality.aqi <= 100
+                  : aq.aqi <= 100
                   ? "bg-amber-50 text-amber-700 border-amber-200"
-                  : airQuality.aqi <= 150
+                  : aq.aqi <= 150
                   ? "bg-orange-50 text-orange-700 border-orange-200"
-                  : airQuality.aqi <= 200
+                  : aq.aqi <= 200
                   ? "bg-rose-50 text-rose-700 border-rose-200"
-                  : airQuality.aqi <= 300
+                  : aq.aqi <= 300
                   ? "bg-purple-50 text-purple-700 border-purple-200"
                   : "bg-rose-900 text-white border-rose-950"
               }`}>
-                {airQuality.rating?.replace(/fresh af/gi, "Fresh") || "Fresh"}
+                {hasAqi ? aq.rating?.replace(/fresh af/gi, "Fresh") : "Unavailable"}
               </span>
             </div>
 
@@ -390,9 +407,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           </div>
 
           <div className="mt-3 pt-2 text-[11px] text-slate-500 flex items-center justify-between">
-            <span className="truncate max-w-[130px] text-slate-600 font-medium">PM2.5: {airQuality.pm2_5} µg/m³</span>
-            <span className="text-slate-500 font-mono text-[10px] truncate max-w-[140px] text-right" title={airQuality.source || "PurpleAir Colorado Ave"}>
-              {airQuality.sensorName || "PurpleAir"} ({airQuality.distance ? airQuality.distance.replace(" from Surf Wave", "") : "0.17 mi"})
+            <span className="truncate max-w-[130px] text-slate-600 font-medium">PM2.5: {hasAqi ? `${aq.pm2_5} µg/m³` : "--"}</span>
+            <span className="text-slate-500 font-mono text-[10px] truncate max-w-[140px] text-right" title={aq.source || "PurpleAir Colorado Ave"}>
+              {hasAqi ? `${aq.sensorName || "PurpleAir"}${aq.distance ? ` (${aq.distance.replace(" from Surf Wave", "")})` : ""}` : "Unavailable"}
             </span>
           </div>
         </div>
@@ -408,7 +425,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             </h3>
           </div>
           <span className="text-xs text-slate-500 font-mono hidden sm:inline">
-            Live reading: {current.flowCfs} CFS
+            Live reading: {hasFlow ? `${flowCfs} CFS` : "unavailable"}
           </span>
         </div>
 
@@ -418,7 +435,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           const threshMin = current.thresholds?.skimShortFins || 550;
           const threshSurf = current.thresholds?.surfTime || 650;
           const threshFiring = current.thresholds?.awesome || 800;
-          const maxScale = Math.max(1100, Math.ceil((current.flowCfs + 50) / 50) * 50);
+          const maxScale = Math.max(1100, Math.ceil(((flowCfs ?? 0) + 50) / 50) * 50);
           const totalSpan = maxScale - minScale;
 
           const belowMinPct = ((threshMin - minScale) / totalSpan) * 100;
@@ -426,7 +443,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           const surfingPct = ((threshFiring - threshSurf) / totalSpan) * 100;
           const firingPct = Math.max(0, 100 - (belowMinPct + lowSurfPct + surfingPct));
 
-          const needlePct = Math.min(99.2, Math.max(0.8, ((current.flowCfs - minScale) / totalSpan) * 100));
+          const needlePct = Math.min(99.2, Math.max(0.8, (((flowCfs ?? 0) - minScale) / totalSpan) * 100));
 
           return (
             <div className="relative pt-6 pb-1">
@@ -454,16 +471,16 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 />
               </div>
 
-              {/* Current flow needle marker */}
-              <div
+              {/* Current flow needle marker (only with a real reading) */}
+              {hasFlow && (<div
                 className="absolute top-0 flex flex-col items-center -translate-x-1/2 transition-all duration-500 pointer-events-none z-10"
                 style={{ left: `${needlePct}%` }}
               >
                 <span className="text-[10px] font-bold font-mono bg-slate-900 text-white px-2 py-0.5 rounded shadow-md border border-slate-700 whitespace-nowrap">
-                  {current.flowCfs} CFS ({current.statusLabel})
+                  {flowCfs} CFS ({current.statusLabel})
                 </span>
                 <div className="w-0.5 h-6 bg-slate-900 mt-1" />
-              </div>
+              </div>)}
 
               {/* Threshold tick labels beneath the bar */}
               <div className="relative w-full h-4 mt-1.5 text-[10px] font-mono text-slate-400 select-none">
@@ -500,7 +517,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         {/* Legend grid with active zone highlighting */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
           <div className={`p-3.5 rounded-lg border transition-all ${
-            current.flowCfs < 550
+            inBand(0, 550)
               ? "bg-rose-50 border-rose-300 ring-2 ring-rose-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
@@ -509,7 +526,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
                 &lt; 550 CFS
               </span>
-              {current.flowCfs < 550 && (
+              {inBand(0, 550) && (
                 <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
@@ -522,7 +539,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           </div>
 
           <div className={`p-3.5 rounded-lg border transition-all ${
-            current.flowCfs >= 550 && current.flowCfs < 650
+            inBand(550, 650)
               ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
@@ -531,7 +548,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
                 550 – 650 CFS
               </span>
-              {current.flowCfs >= 550 && current.flowCfs < 650 && (
+              {inBand(550, 650) && (
                 <span className="text-[9px] bg-amber-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
@@ -544,7 +561,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           </div>
 
           <div className={`p-3.5 rounded-lg border transition-all ${
-            current.flowCfs >= 650 && current.flowCfs < 800
+            inBand(650, 800)
               ? "bg-sky-50 border-sky-300 ring-2 ring-sky-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
@@ -553,7 +570,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <span className="w-2 h-2 rounded-full bg-sky-500" />
                 650 – 800 CFS
               </span>
-              {current.flowCfs >= 650 && current.flowCfs < 800 && (
+              {inBand(650, 800) && (
                 <span className="text-[9px] bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
@@ -566,7 +583,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           </div>
 
           <div className={`p-3.5 rounded-lg border transition-all ${
-            current.flowCfs >= 800
+            inBand(800)
               ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
@@ -575,7 +592,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 800+ CFS
               </span>
-              {current.flowCfs >= 800 && (
+              {inBand(800) && (
                 <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>

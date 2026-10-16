@@ -19,6 +19,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { SurfDataResponse, UnitType } from "../types";
+import { GageUnavailable, UnavailableCard } from "./GageUnavailable";
 
 interface WickiupReservoirGraphProps {
   data: SurfDataResponse;
@@ -97,7 +98,7 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
 
   // Fallback defaults if storageData is still populating
   const capacityAf = storageData?.capacityAcreFeet || 200000;
-  const currentAf = storageData?.currentAcreFeet ?? 35575;
+  const currentAf = storageData?.currentAcreFeet ?? 0;
   const currentPct =
     storageData?.percentOfCapacity ??
     parseFloat(((currentAf / capacityAf) * 100).toFixed(1));
@@ -106,40 +107,8 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
 
   // Filter and format daily history based on selected time window
   const filteredHistory = useMemo(() => {
-    if (!rawHistory || rawHistory.length === 0) {
-      const simulatedPoints = [];
-      const now = Date.now();
-      const days = timeWindow === "90d" ? 90 : timeWindow === "6m" ? 180 : 365;
-
-      for (let i = days; i >= 0; i--) {
-        const d = new Date(now - i * 86400000);
-        const dayOfYear = Math.floor(
-          (d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000
-        );
-        const sinFactor = Math.sin(((dayOfYear - 15) / 365) * 2 * Math.PI);
-        const af = Math.round(75000 + 45000 * sinFactor);
-        const isoDate = d.toISOString().slice(0, 10);
-        const [y, m, dayNum] = isoDate.split("-").map(Number);
-        const dateObj = new Date(y, m - 1, dayNum);
-
-        simulatedPoints.push({
-          date: isoDate,
-          timestamp: d.getTime(),
-          acreFeet: af,
-          percent: parseFloat(((af / capacityAf) * 100).toFixed(1)),
-          displayLabel:
-            timeWindow === "1y"
-              ? `${dateObj.toLocaleString("en-US", { month: "short" })} '${String(y).slice(-2)}`
-              : dateObj.toLocaleString("en-US", { month: "short", day: "numeric" }),
-          fullDate: dateObj.toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }),
-        });
-      }
-      return simulatedPoints;
-    }
+    // No placeholder curve: an empty history renders the "unavailable" card below
+    if (!rawHistory || rawHistory.length === 0) return [];
 
     let sliceCount = rawHistory.length;
     if (timeWindow === "90d") sliceCount = Math.min(rawHistory.length, 90);
@@ -266,11 +235,19 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
   // Compute clean adaptive interval for X-axis ticks
   const tickInterval = Math.max(1, Math.floor(filteredHistory.length / 6));
 
+  const wickiupStatus = data.dataStatus?.wickiup;
+  if (!storageData || filteredHistory.length === 0) {
+    return <UnavailableCard title="Wickiup Reservoir Storage" status={wickiupStatus} what="Wickiup storage data" />;
+  }
+
   return (
     <div
       id="wickiup-reservoir-component"
       className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 space-y-6"
     >
+      {wickiupStatus && !wickiupStatus.available && (
+        <GageUnavailable status={wickiupStatus} what="Current Wickiup storage" />
+      )}
       {/* Component Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
         <div className="flex items-start gap-3">

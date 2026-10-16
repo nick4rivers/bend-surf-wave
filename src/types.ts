@@ -3,12 +3,15 @@ export interface SurfDataResponse {
   riverName: string;
   coordinates: { lat: number; lng: number };
   lastUpdated: string;
+  /** Health of each live data feed. When a feed is down or stale, its current values are null. */
+  dataStatus?: DataStatus;
   current: {
-    flowCfs: number;
-    waterTempF: number;
-    waterTempC: number;
-    airTempF: number;
-    airTempC: number;
+    /** null when the USBR Hydromet gages are down or stale; never a placeholder value */
+    flowCfs: number | null;
+    waterTempF: number | null;
+    waterTempC: number | null;
+    airTempF: number | null;
+    airTempC: number | null;
     waterTempStation?: string;
     statusRating: string;
     statusLabel: string;
@@ -18,9 +21,10 @@ export interface SurfDataResponse {
       thickness: string;
       accessories: string;
       comfortLevel: string;
+      subtext?: string;
       icon: string;
-    };
-    flowTrendDiff: number;
+    } | null;
+    flowTrendDiff: number | null;
     /** Head of Park outlook for the next ~lagHours, from BENO readings already "in the pipe" */
     forecast?: HeadOfParkForecast;
     thresholds: {
@@ -37,7 +41,7 @@ export interface SurfDataResponse {
     arnoldCanal: number;
     headOfPark: number;
     littleDeschutes: number;
-  };
+  } | null;
   timeSeries: {
     flow: Array<{
       date: string;
@@ -57,7 +61,7 @@ export interface SurfDataResponse {
     temperature: Array<{
       date: string;
       waterTemp: number;
-      airTemp: number;
+      airTemp: number | null;
       t2mm: number;
       t32: number;
       t43: number;
@@ -113,6 +117,26 @@ export interface SurfDataResponse {
     lookupNote?: string;
   }>;
   wickiupStorage?: WickiupStorageData;
+}
+
+export interface FeedStatus {
+  /** true when a recent, real reading exists */
+  available: boolean;
+  /** true when readings exist but the newest is older than the staleness limit */
+  stale: boolean;
+  /** Newest real reading ("YYYY-MM-DD HH:MM" Pacific), or null if none came back */
+  lastReading: string | null;
+  /** Short plain-language explanation shown to visitors when not available */
+  message?: string;
+}
+
+export interface DataStatus {
+  /** USBR Hydromet flow gages (BENO, canals) behind the Head of Park estimate */
+  flow: FeedStatus;
+  /** USBR Hydromet BENO water temperature */
+  waterTemp: FeedStatus;
+  /** USBR Hydromet Wickiup storage */
+  wickiup: FeedStatus;
 }
 
 export interface WickiupStoragePoint {

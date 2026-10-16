@@ -31,7 +31,8 @@ export const LowersWaveReport: React.FC<LowersWaveReportProps> = ({
   const selectedProfile = TUNE_PROFILES[selectedSchedule.tuneType];
   const isCurrentSurfWave = status.todaySchedule.tuneType === "surf-wave";
 
-  const displayFlow = (cfs: number) => {
+  const displayFlow = (cfs: number | null) => {
+    if (cfs === null || !Number.isFinite(cfs)) return "unavailable (USBR gages not reporting)";
     if (unit === "metric") {
       return `${(cfs * 0.0283168).toFixed(1)} m³/s`;
     }
