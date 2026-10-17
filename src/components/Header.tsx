@@ -65,6 +65,9 @@ export const Header: React.FC<HeaderProps> = ({
   const getFlowBadgeClass = (label?: string) => {
     if (!label || !flowAvailable) return "bg-slate-500/20 text-slate-300 border-slate-500/30";
     const l = label.toLowerCase();
+    if (l.includes("below") || l.includes("very low")) {
+      return "bg-rose-500/20 text-rose-300 border-rose-400/30";
+    }
     if (l.includes("firing") || l.includes("awesome")) {
       return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
     }
@@ -101,8 +104,8 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Logo & Spot title with Last Updated from BENO discharge */}
           <div className="flex flex-col justify-center shrink-0">
             <div className="flex items-center gap-2">
-              <p className="font-outfit font-bold text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
-                BEND SURF <span className="text-sky-400 font-semibold">WAVE</span>
+              <p className="font-outfit font-bold text-[18px] sm:text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
+                BEND SURF <span className="text-sky-400 font-semibold">REPORT</span>
               </p>
               {flowAvailable ? (
                 <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
@@ -117,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
             {!flowAvailable && (
               <p
                 id="header-last-updated"
-                className="text-xs text-amber-300 font-medium tracking-normal mt-1.5 leading-none"
+                className="text-[10px] sm:text-xs text-amber-300 font-medium tracking-normal mt-1.5 leading-none"
               >
                 USBR gage data unavailable{formattedUpdated ? ` · last reading ${formattedUpdated}` : ""}
               </p>
@@ -125,10 +128,10 @@ export const Header: React.FC<HeaderProps> = ({
             {flowAvailable && formattedUpdated && (
               <p
                 id="header-last-updated"
-                className="text-xs text-slate-400 font-medium tracking-normal mt-1.5 flex items-center gap-1.5 leading-none"
+                className="text-[10px] sm:text-xs text-slate-400 font-medium tracking-normal mt-1.5 flex items-center gap-1.5 leading-none"
               >
                 <span>Updated:</span>
-                <span className="text-sky-400 font-mono text-[15px] font-normal">
+                <span className="text-sky-400 font-mono text-[12px] sm:text-[15px] font-normal">
                   {formattedUpdated}
                 </span>
                 <span className="text-slate-500 text-[11px] hidden xs:inline">
@@ -168,7 +171,8 @@ export const Header: React.FC<HeaderProps> = ({
                       statusLabel
                     )}`}
                   >
-                    {statusLabel}
+                    {/* Short form so the badge fits on small phones */}
+                    {statusLabel === "Below Recommended" ? "Very Low" : statusLabel}
                   </span>
                 )}
               </div>

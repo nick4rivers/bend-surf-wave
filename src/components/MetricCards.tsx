@@ -88,22 +88,6 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                !hasFlow
-                  ? "bg-slate-500/20 text-slate-300 border border-slate-400/30"
-                  : flowCfs >= 800
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                  : flowCfs >= 650
-                  ? "bg-sky-500/20 text-sky-300 border border-sky-400/30"
-                  : flowCfs >= 550
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-400/30"
-                  : "bg-rose-500/20 text-rose-300 border border-rose-400/30"
-              }`}>
-                <Sparkles className="w-3 h-3" />
-                {current.statusLabel}
-              </span>
-            </div>
             {hasFlow ? (
               <h2 className="text-2xl sm:text-3xl font-light text-white tracking-tight">
                 Bend Surf Wave is{" "}
