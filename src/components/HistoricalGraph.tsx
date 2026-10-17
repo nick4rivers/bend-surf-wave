@@ -346,7 +346,7 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-rose-400 rounded"></span>
                 <span className="text-rose-600 font-medium font-mono text-[11px]">
-                  &lt; {unit === "metric" ? "15.6 m³/s" : "550 CFS"} (Below Minimum)
+                  &lt; {unit === "metric" ? "15.6 m³/s" : "550 CFS"} (Below Recommended)
                 </span>
               </div>
             </div>

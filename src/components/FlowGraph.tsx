@@ -104,7 +104,7 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
       let status = "Firing";
       let statusBadge = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
       if (cfs < 550) {
-        status = "Below Minimum";
+        status = "Below Recommended";
         statusBadge = "bg-rose-500/20 text-rose-300 border-rose-500/40";
       } else if (cfs < 650) {
         status = "Low-Surfable";

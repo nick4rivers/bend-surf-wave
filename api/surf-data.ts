@@ -486,10 +486,10 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     statusColor = "amber";
     statusDescription = "Bring your foamy, skimboard, and short fins, ramp is shallow so helmets are recommended.";
   } else {
-    statusRating = "BELOW MINIMUM";
-    statusLabel = "Below Minimum";
+    statusRating = "BELOW RECOMMENDED";
+    statusLabel = "Below Recommended";
     statusColor = "rose";
-    statusDescription = "Wait for more water, contact with rocks and concrete is a certainty.";
+    statusDescription = "While still surfable around 500 cfs, contact with concrete starts to become a certainty for bodies and boards.";
   }
 
   let wetsuitRec: SurfDataResponse["current"]["wetsuitRec"] = null;

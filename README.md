@@ -19,7 +19,7 @@ Real-time conditions for the surf wave at the Bend Whitewater Park on the Deschu
 | 800+ | Firing |
 | 650–799 | Surfing |
 | 550–649 | Low-surfable |
-| < 550 | Below minimum |
+| < 550 | Below recommended |
 
 ## Data sources
 
