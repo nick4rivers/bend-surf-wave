@@ -103,9 +103,6 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <Sparkles className="w-3 h-3" />
                 {current.statusLabel}
               </span>
-              <span className="text-xs text-slate-400 font-mono">
-                Firing Threshold: &gt;{unit === "metric" ? (current.thresholds.awesome * 0.0283).toFixed(1) + " m³/s" : `${current.thresholds.awesome} CFS`}
-              </span>
             </div>
             {hasFlow ? (
               <h2 className="text-2xl sm:text-3xl font-light text-white tracking-tight">
