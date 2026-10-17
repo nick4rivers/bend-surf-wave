@@ -25,7 +25,7 @@ const FEATURES: Feature[] = [
   {
     icon: Waves,
     title: "River flow at the wave",
-    body: "Modeled flow in CFS at the head of the park, built from the Benham Falls gage upstream minus irrigation canal diversions, with a surf rating from Below Minimum to Firing.",
+    body: "Modeled flow in CFS at the head of the park, built from the Benham Falls gage upstream minus irrigation canal diversions, with a surf rating from Below Recommended to Firing.",
     tab: "flow",
     cta: "See flow details",
   },

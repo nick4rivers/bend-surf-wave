@@ -452,7 +452,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <div
                   style={{ width: `${belowMinPct}%` }}
                   className="bg-rose-500 border-r border-white/90 transition-all duration-300"
-                  title={`${minScale}–${threshMin} CFS: Below Minimum`}
+                  title={`${minScale}–${threshMin} CFS: Below Recommended`}
                 />
                 <div
                   style={{ width: `${lowSurfPct}%` }}
@@ -488,7 +488,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 <span
                   className="absolute -translate-x-1/2 text-rose-600 font-semibold"
                   style={{ left: `${belowMinPct}%` }}
-                  title="Below Minimum (< 550 CFS)"
+                  title="Below Recommended (< 550 CFS)"
                 >
                   550
                 </span>
@@ -532,9 +532,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 </span>
               )}
             </div>
-            <p className="text-slate-900 font-bold text-sm mt-1">Below Minimum</p>
+            <p className="text-slate-900 font-bold text-sm mt-1">Below Recommended</p>
             <p className="text-slate-600 text-[11px] mt-1 leading-snug">
-              Wait for more water, contact with rocks and concrete is a certainty.
+              While still surfable around 500 cfs, contact with concrete starts to become a certainty for bodies and boards.
             </p>
           </div>
 
