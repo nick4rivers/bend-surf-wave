@@ -65,6 +65,9 @@ export const Header: React.FC<HeaderProps> = ({
   const getFlowBadgeClass = (label?: string) => {
     if (!label || !flowAvailable) return "bg-slate-500/20 text-slate-300 border-slate-500/30";
     const l = label.toLowerCase();
+    if (l.includes("below") || l.includes("very low")) {
+      return "bg-rose-500/20 text-rose-300 border-rose-400/30";
+    }
     if (l.includes("firing") || l.includes("awesome")) {
       return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
     }
@@ -168,7 +171,8 @@ export const Header: React.FC<HeaderProps> = ({
                       statusLabel
                     )}`}
                   >
-                    {statusLabel}
+                    {/* Short form so the badge fits on small phones */}
+                    {statusLabel === "Below Recommended" ? "Very Low" : statusLabel}
                   </span>
                 )}
               </div>
