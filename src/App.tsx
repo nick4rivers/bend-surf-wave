@@ -166,7 +166,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-800 font-bold">
             <Waves className="w-4 h-4 text-sky-600" />
-            <span>Bend Surf Wave</span>
+            <span>Bend Surf Report</span>
           </div>
         </div>
       </footer>

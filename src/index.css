@@ -1,1 +1,105 @@
 @import "tailwindcss";
+
+/*
+ * "High Desert" skin.
+ * The components keep their existing slate / sky / emerald utility classes; this theme
+ * remaps those palettes so the whole site reskins without layout changes:
+ *   slate   -> sand-to-basalt warm neutrals (page, cards, text, dark panels)
+ *   sky     -> snowmelt teal (primary accent, "Surfing")
+ *   emerald -> sagebrush green ("Low-Surfable", Lowers, positive states)
+ *   indigo, blue -> glacier and deep-lake blues ("Cool" and "Cold" water)
+ *   sunset  -> new ramp for "Firing" and the header wordmark
+ * amber / rose / purple etc. keep Tailwind's defaults for warnings, errors and charts.
+ */
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-display--font-variation-settings: "SOFT" 100;
+  --font-outfit: "Fraunces", ui-serif, Georgia, serif;
+  --font-outfit--font-variation-settings: "SOFT" 100;
+
+  --color-white: #fffdf8;
+
+  --color-slate-50: #fbf7ee;
+  --color-slate-100: #f3ede0;
+  --color-slate-200: #e4dac6;
+  --color-slate-300: #cfc4ad;
+  --color-slate-400: #a39a89;
+  --color-slate-500: #736c60;
+  --color-slate-600: #5e5a52;
+  --color-slate-700: #46433d;
+  --color-slate-800: #383633;
+  --color-slate-900: #2b2a28;
+  --color-slate-950: #1f1e1c;
+
+  --color-sky-50: #eaf4f2;
+  --color-sky-100: #d3e9e6;
+  --color-sky-200: #a9d4cf;
+  --color-sky-300: #8fd0cc;
+  --color-sky-400: #5fb2ad;
+  --color-sky-500: #2f8783;
+  --color-sky-600: #256b6e;
+  --color-sky-700: #1e5a5c;
+  --color-sky-800: #1b4b4d;
+  --color-sky-900: #183e40;
+  --color-sky-950: #0f2a2b;
+
+  --color-emerald-50: #f0f3ea;
+  --color-emerald-100: #e1e8d6;
+  --color-emerald-200: #c9d4b6;
+  --color-emerald-300: #b9c8a2;
+  --color-emerald-400: #a3ae8f;
+  --color-emerald-500: #7d8f62;
+  --color-emerald-600: #5f7049;
+  --color-emerald-700: #4e5c3c;
+  --color-emerald-800: #3f4a31;
+  --color-emerald-900: #343d29;
+  --color-emerald-950: #1d2317;
+
+  /* Cool-water tones for the "Cool" / "Cold" water temperature tiers */
+  --color-indigo-50: #edf3f6;
+  --color-indigo-100: #d8e6ec;
+  --color-indigo-200: #b3cdd9;
+  --color-indigo-300: #8db3c4;
+  --color-indigo-400: #6a99ae;
+  --color-indigo-500: #5a8a9e;
+  --color-indigo-600: #4d7a8c;
+  --color-indigo-700: #3f6574;
+  --color-indigo-800: #35535f;
+  --color-indigo-900: #2d454f;
+  --color-indigo-950: #1c2d34;
+
+  --color-blue-50: #edf1f7;
+  --color-blue-100: #d9e1ee;
+  --color-blue-200: #b2c3dc;
+  --color-blue-300: #8aa4c9;
+  --color-blue-400: #6886b4;
+  --color-blue-500: #4c6c9c;
+  --color-blue-600: #3e5b86;
+  --color-blue-700: #34496c;
+  --color-blue-800: #2d3e5a;
+  --color-blue-900: #27354b;
+  --color-blue-950: #18202e;
+
+  --color-sunset-50: #fcf0e9;
+  --color-sunset-100: #f8dccb;
+  --color-sunset-200: #f1bb9c;
+  --color-sunset-300: #eb9f78;
+  --color-sunset-400: #e8875a;
+  --color-sunset-500: #d9693a;
+  --color-sunset-600: #c2552a;
+  --color-sunset-700: #a04422;
+  --color-sunset-800: #80371f;
+  --color-sunset-900: #66301d;
+  --color-sunset-950: #381609;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-variation-settings: "SOFT" 100;
+  }
+}

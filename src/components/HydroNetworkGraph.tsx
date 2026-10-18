@@ -360,21 +360,21 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
         <div className="h-80 sm:h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={filteredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3ede0" vertical={false} />
 
               <XAxis
                 dataKey="shortLabel"
-                stroke="#94a3b8"
-                tick={{ fontSize: 11, fill: "#64748b" }}
-                tickLine={{ stroke: "#cbd5e1" }}
+                stroke="#a39a89"
+                tick={{ fontSize: 11, fill: "#736c60" }}
+                tickLine={{ stroke: "#cfc4ad" }}
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
 
               <YAxis
-                stroke="#94a3b8"
-                tick={{ fontSize: 11, fill: "#64748b" }}
-                tickLine={{ stroke: "#cbd5e1" }}
+                stroke="#a39a89"
+                tick={{ fontSize: 11, fill: "#736c60" }}
+                tickLine={{ stroke: "#cfc4ad" }}
                 domain={["auto", "auto"]}
                 unit={unit === "metric" ? " m³" : " cfs"}
               />
@@ -386,7 +386,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
                   type="monotone"
                   dataKey="displayHeadOfPark"
                   name="Head of Park (Green Wave)"
-                  stroke="#059669"
+                  stroke="#5f7049"
                   strokeWidth={3}
                   dot={false}
                 />
@@ -397,7 +397,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
                   type="monotone"
                   dataKey="displayBenham"
                   name="Benham Falls"
-                  stroke="#0284c7"
+                  stroke="#256b6e"
                   strokeWidth={2}
                   dot={false}
                 />
