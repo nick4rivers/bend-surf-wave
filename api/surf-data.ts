@@ -476,8 +476,8 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     statusColor = "emerald";
     statusDescription = "Wave is steep and fast, bring your performance river surfboard.";
   } else if (flowCfs >= 650) {
-    statusRating = "SURFING";
-    statusLabel = "Surfing";
+    statusRating = "OPTIMAL";
+    statusLabel = "Optimal";
     statusColor = "sky";
     statusDescription = "Wave is in great shape and surfing well, contact with concrete and rocks unlikely.";
   } else if (flowCfs >= 550) {

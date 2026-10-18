@@ -102,16 +102,16 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
       const point = payload[0].payload;
       const cfs = point.isForecast ? point.forecastCfs : point.cfs;
       let status = "Firing";
-      let statusBadge = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+      let statusBadge = "bg-firing-500/30 text-firing-200 border-firing-400/50";
       if (cfs < 550) {
         status = "Below Recommended";
-        statusBadge = "bg-rose-500/20 text-rose-300 border-rose-500/40";
+        statusBadge = "bg-belowrec-500/25 text-belowrec-200 border-belowrec-400/40";
       } else if (cfs < 650) {
         status = "Low-Surfable";
-        statusBadge = "bg-amber-500/20 text-amber-300 border-amber-500/40";
+        statusBadge = "bg-lowsurf-500/20 text-lowsurf-200 border-lowsurf-400/40";
       } else if (cfs < 800) {
-        status = "Surfing";
-        statusBadge = "bg-sky-500/20 text-sky-300 border-sky-500/40";
+        status = "Optimal";
+        statusBadge = "bg-optimal-500/25 text-optimal-200 border-optimal-400/40";
       }
 
       return (
@@ -236,26 +236,26 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
             <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0284c7" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#377498" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#377498" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f4ede0" vertical={false} />
 
               <XAxis
                 dataKey="shortLabel"
-                stroke="#94a3b8"
-                tick={{ fontSize: 11, fill: "#64748b" }}
-                tickLine={{ stroke: "#cbd5e1" }}
+                stroke="#a29f99"
+                tick={{ fontSize: 11, fill: "#6c7080" }}
+                tickLine={{ stroke: "#d1c8b5" }}
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
 
               <YAxis
-                stroke="#94a3b8"
-                tick={{ fontSize: 11, fill: "#64748b" }}
-                tickLine={{ stroke: "#cbd5e1" }}
+                stroke="#a29f99"
+                tick={{ fontSize: 11, fill: "#6c7080" }}
+                tickLine={{ stroke: "#d1c8b5" }}
                 domain={[
                   (dataMin: number) => {
                     if (unit === "metric") {
@@ -280,12 +280,12 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
                 <>
                   <ReferenceLine
                     y={unit === "metric" ? parseFloat((800 * 0.0283168).toFixed(1)) : 800}
-                    stroke="#059669"
+                    stroke="#1d5492"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
                       value: unit === "metric" ? "22.7 m³/s (Firing)" : "800 CFS (Firing)",
-                      fill: "#059669",
+                      fill: "#1d5492",
                       fontSize: 11,
                       position: "insideTopRight",
                       fontWeight: 600,
@@ -293,12 +293,12 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
                   />
                   <ReferenceLine
                     y={unit === "metric" ? parseFloat((650 * 0.0283168).toFixed(1)) : 650}
-                    stroke="#0284c7"
+                    stroke="#347d4c"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
-                      value: unit === "metric" ? "18.4 m³/s (Surfing)" : "650 CFS (Surfing)",
-                      fill: "#0284c7",
+                      value: unit === "metric" ? "18.4 m³/s (Optimal)" : "650 CFS (Optimal)",
+                      fill: "#347d4c",
                       fontSize: 11,
                       position: "insideTopRight",
                       fontWeight: 600,
@@ -306,12 +306,12 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
                   />
                   <ReferenceLine
                     y={unit === "metric" ? parseFloat((550 * 0.0283168).toFixed(1)) : 550}
-                    stroke="#d97706"
+                    stroke="#c18f24"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
                       value: unit === "metric" ? "15.6 m³/s (Low-Surfable)" : "550 CFS (Low-Surfable)",
-                      fill: "#d97706",
+                      fill: "#c18f24",
                       fontSize: 11,
                       position: "insideTopRight",
                       fontWeight: 600,
@@ -323,24 +323,24 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
               <Area
                 type="monotone"
                 dataKey={unit === "metric" ? "flowMetric" : "cfs"}
-                stroke="#0284c7"
+                stroke="#377498"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#flowGradient)"
-                activeDot={{ r: 5, fill: "#0284c7", stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: "#377498", stroke: "#ffffff", strokeWidth: 2 }}
               />
 
               {/* Modeled outlook: flow already between Benham Falls and the park */}
               <Area
                 type="monotone"
                 dataKey={unit === "metric" ? "forecastMetric" : "forecastCfs"}
-                stroke="#0284c7"
+                stroke="#377498"
                 strokeWidth={2}
                 strokeDasharray="5 4"
                 fill="none"
                 connectNulls={false}
                 isAnimationActive={false}
-                activeDot={{ r: 4, fill: "#ffffff", stroke: "#0284c7", strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: "#ffffff", stroke: "#377498", strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -356,13 +356,13 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
               <span className="w-3 h-0 border-t-2 border-dashed border-sky-600" /> Outlook (already past Benham Falls)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-emerald-600 border-dashed" /> 800+ Firing
+              <span className="w-3 h-0.5 bg-firing-600 border-dashed" /> 800+ Firing
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-sky-600 border-dashed" /> 650–800 Surfing
+              <span className="w-3 h-0.5 bg-optimal-600 border-dashed" /> 650–800 Optimal
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-amber-600 border-dashed" /> 550–650 Low-Surfable
+              <span className="w-3 h-0.5 bg-lowsurf-600 border-dashed" /> 550–650 Low-Surfable
             </span>
           </div>
         </div>

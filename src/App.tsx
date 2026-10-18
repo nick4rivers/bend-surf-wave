@@ -55,9 +55,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 p-4">
         <div className="flex flex-col items-center space-y-4 max-w-sm text-center">
-          <div className="h-16 w-16 rounded-2xl bg-white border border-slate-200 p-3 shadow-sm flex items-center justify-center">
-            <Waves className="h-8 w-8 text-sky-600 animate-spin" />
-          </div>
+          <img src="/icon-badge.svg" alt="" aria-hidden="true" className="h-20 w-20 animate-spin [animation-duration:2.4s]" />
           <h2 className="text-xl font-bold text-slate-900">
             Retrieving Live River Data...
           </h2>
@@ -165,8 +163,8 @@ export default function App() {
       <footer className="border-t border-slate-200 bg-white py-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-800 font-bold">
-            <Waves className="w-4 h-4 text-sky-600" />
-            <span>Bend Surf Wave</span>
+            <img src="/icon-badge.svg" alt="" aria-hidden="true" className="w-7 h-7" />
+            <span>Bend Surf Report</span>
           </div>
         </div>
       </footer>

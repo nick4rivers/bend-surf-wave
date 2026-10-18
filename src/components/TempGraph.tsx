@@ -570,21 +570,21 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
         <div className="h-80 sm:h-96 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={filteredData} margin={{ top: 15, right: 20, left: -5, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f4ede0" vertical={false} />
 
               <XAxis
                 dataKey="shortLabel"
-                stroke="#94a3b8"
-                tick={{ fontSize: 11, fill: "#64748b" }}
-                tickLine={{ stroke: "#cbd5e1" }}
+                stroke="#a29f99"
+                tick={{ fontSize: 11, fill: "#6c7080" }}
+                tickLine={{ stroke: "#d1c8b5" }}
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
 
               <YAxis
-                stroke="#94a3b8"
-                tick={{ fontSize: 11, fill: "#64748b" }}
-                tickLine={{ stroke: "#cbd5e1" }}
+                stroke="#a29f99"
+                tick={{ fontSize: 11, fill: "#6c7080" }}
+                tickLine={{ stroke: "#d1c8b5" }}
                 domain={yDomain}
                 allowDataOverflow={true}
                 unit={unit === "metric" ? "°C" : "°F"}
@@ -596,7 +596,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {showRef62 && (
                 <ReferenceLine
                   y={ref62Val}
-                  stroke="#059669"
+                  stroke="#698b54"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
@@ -611,12 +611,12 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {showRef58 && (
                 <ReferenceLine
                   y={ref58Val}
-                  stroke="#0284c7"
+                  stroke="#377498"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
                     value: "58°F — Comfortable",
-                    fill: "#0369a1",
+                    fill: "#306583",
                     fontSize: 10,
                     fontWeight: 600,
                     position: "insideTopRight",
@@ -644,10 +644,10 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                 type="monotone"
                 dataKey="displayWater"
                 name="Water Temperature"
-                stroke="#0284c7"
+                stroke="#377498"
                 strokeWidth={3}
                 dot={false}
-                activeDot={{ r: 5, fill: "#0284c7", stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: "#377498", stroke: "#ffffff", strokeWidth: 2 }}
               />
 
               {/* Air Temp Line - Distinct amber/orange dashed line with high contrast against reference lines */}

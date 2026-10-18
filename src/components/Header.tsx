@@ -66,16 +66,16 @@ export const Header: React.FC<HeaderProps> = ({
     if (!label || !flowAvailable) return "bg-slate-500/20 text-slate-300 border-slate-500/30";
     const l = label.toLowerCase();
     if (l.includes("below") || l.includes("very low")) {
-      return "bg-rose-500/20 text-rose-300 border-rose-400/30";
+      return "bg-belowrec-500/25 text-belowrec-200 border-belowrec-400/40";
     }
     if (l.includes("firing") || l.includes("awesome")) {
-      return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+      return "bg-firing-500/30 text-firing-200 border-firing-400/50";
     }
-    if (l.includes("surf") && !l.includes("low")) {
-      return "bg-sky-500/20 text-sky-300 border-sky-400/30";
+    if ((l.includes("optimal") || l.includes("surf")) && !l.includes("low")) {
+      return "bg-optimal-500/25 text-optimal-200 border-optimal-400/40";
     }
     if (l.includes("low") || l.includes("skim") || l.includes("short")) {
-      return "bg-amber-500/20 text-amber-300 border-amber-400/30";
+      return "bg-lowsurf-500/20 text-lowsurf-200 border-lowsurf-400/40";
     }
     return "bg-rose-500/20 text-rose-300 border-rose-400/30";
   };
@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-col justify-center shrink-0">
             <div className="flex items-center gap-2">
               <p className="font-outfit font-bold text-[18px] sm:text-[23px] text-white tracking-tight whitespace-nowrap leading-none">
-                BEND SURF <span className="text-sky-400 font-semibold">REPORT</span>
+                BEND SURF <span className="text-honey-500 font-semibold">REPORT</span>
               </p>
               {flowAvailable ? (
                 <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
@@ -133,9 +133,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Updated:</span>
                 <span className="text-sky-400 font-mono text-[12px] sm:text-[15px] font-normal">
                   {formattedUpdated}
-                </span>
-                <span className="text-slate-500 text-[11px] hidden xs:inline">
-                  (BENO discharge)
                 </span>
               </p>
             )}
@@ -217,11 +214,11 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
+                    ? "bg-sky-500/35 text-sky-100 border border-sky-400/70 shadow-sm"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
                 }`}
               >
-                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-sky-400" : "text-slate-400"}`} />
+                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-sky-200" : "text-slate-400"}`} />
                 {tab.label}
               </button>
             );
