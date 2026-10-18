@@ -4,7 +4,7 @@
  * Site skin: "Shop Sign" general palette + a separate flow-rating scale.
  *
  * General UI (components keep their existing utility classes; the theme remaps them):
- *   slate   -> cream-to-navy neutrals (page, cards, text, dark header/hero panels)
+ *   slate   -> cream-to-near-black neutrals (light page/cards, near-black header/hero panels)
  *   sky     -> brighter steel blue (primary accent: buttons, links, active tab, main flow line)
  *   emerald -> sage (Lowers, LIVE badge, positive states)
  *   honey   -> new; the "REPORT" wordmark
@@ -23,19 +23,19 @@
   --font-outfit: "Fraunces", ui-serif, Georgia, serif;
   --font-outfit--font-variation-settings: "SOFT" 100;
 
-  --color-white: #fffdf8;
+  --color-white: #fffefb;
 
-  --color-slate-50: #faf6ee;
-  --color-slate-100: #f4ede0;
-  --color-slate-200: #e7decb;
+  --color-slate-50: #fcfaf5;
+  --color-slate-100: #f7f2e8;
+  --color-slate-200: #ece5d6;
   --color-slate-300: #d1c8b5;
   --color-slate-400: #a29f99;
   --color-slate-500: #6c7080;
   --color-slate-600: #535a6b;
-  --color-slate-700: #3c4459;
-  --color-slate-800: #2a3450;
-  --color-slate-900: #1f2a44;
-  --color-slate-950: #161e33;
+  --color-slate-700: #363c49;
+  --color-slate-800: #22262e;
+  --color-slate-900: #14171c;
+  --color-slate-950: #0c0e11;
 
   --color-sky-50: #eff3f2;
   --color-sky-100: #d8e5e9;
