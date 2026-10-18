@@ -32,7 +32,7 @@ const YEAR_COLORS: Record<string, string> = {
   "2016": "#84cc16", // Lime
   "2015": "#a855f7", // Violet
   "2014": "#eab308", // Yellow
-  "2013": "#736c60", // Slate
+  "2013": "#6c7080", // Slate
 };
 
 export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) => {
@@ -193,7 +193,7 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
         <div className="flex flex-wrap gap-1.5 my-4">
           {years.map((year) => {
             const isSelected = !!selectedYears[year];
-            const color = YEAR_COLORS[year] || "#c2552a";
+            const color = YEAR_COLORS[year] || "#1d5492";
             return (
               <button
                 key={year}
@@ -206,7 +206,7 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: isSelected ? color : "#cfc4ad" }}
+                  style={{ backgroundColor: isSelected ? color : "#d1c8b5" }}
                 />
                 {year}
               </button>
@@ -218,21 +218,21 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
         <div className="h-80 sm:h-96 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={formattedData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3ede0" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f4ede0" vertical={false} />
 
               <XAxis
                 dataKey="shortLabel"
-                stroke="#a39a89"
-                tick={{ fontSize: 11, fill: "#736c60" }}
-                tickLine={{ stroke: "#cfc4ad" }}
+                stroke="#a29f99"
+                tick={{ fontSize: 11, fill: "#6c7080" }}
+                tickLine={{ stroke: "#d1c8b5" }}
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
 
               <YAxis
-                stroke="#a39a89"
-                tick={{ fontSize: 11, fill: "#736c60" }}
-                tickLine={{ stroke: "#cfc4ad" }}
+                stroke="#a29f99"
+                tick={{ fontSize: 11, fill: "#6c7080" }}
+                tickLine={{ stroke: "#d1c8b5" }}
                 domain={[
                   (dataMin: number) => {
                     if (unit === "metric") {
@@ -257,12 +257,12 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
                 <>
                   <ReferenceLine
                     y={unit === "metric" ? parseFloat((800 * 0.0283168).toFixed(1)) : 800}
-                    stroke="#c2552a"
+                    stroke="#1d5492"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
                       value: unit === "metric" ? "22.7 m³/s (Firing)" : "800 CFS (Firing)",
-                      fill: "#c2552a",
+                      fill: "#1d5492",
                       fontSize: 11,
                       position: "insideTopRight",
                       fontWeight: 600,
@@ -270,12 +270,12 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
                   />
                   <ReferenceLine
                     y={unit === "metric" ? parseFloat((650 * 0.0283168).toFixed(1)) : 650}
-                    stroke="#256b6e"
+                    stroke="#347d4c"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
-                      value: unit === "metric" ? "18.4 m³/s (Surfing)" : "650 CFS (Surfing)",
-                      fill: "#256b6e",
+                      value: unit === "metric" ? "18.4 m³/s (Optimal)" : "650 CFS (Optimal)",
+                      fill: "#347d4c",
                       fontSize: 11,
                       position: "insideTopRight",
                       fontWeight: 600,
@@ -283,12 +283,12 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
                   />
                   <ReferenceLine
                     y={unit === "metric" ? parseFloat((550 * 0.0283168).toFixed(1)) : 550}
-                    stroke="#5f7049"
+                    stroke="#c18f24"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
                       value: unit === "metric" ? "15.6 m³/s (Low-Surfable)" : "550 CFS (Low-Surfable)",
-                      fill: "#5f7049",
+                      fill: "#c18f24",
                       fontSize: 11,
                       position: "insideTopRight",
                       fontWeight: 600,
@@ -306,7 +306,7 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
                     type="monotone"
                     dataKey={year}
                     name={`${year} Season`}
-                    stroke={YEAR_COLORS[year] || "#c2552a"}
+                    stroke={YEAR_COLORS[year] || "#1d5492"}
                     strokeWidth={isHighlight ? 3 : 1.5}
                     dot={false}
                     opacity={isHighlight ? 1 : 0.75}
@@ -326,26 +326,26 @@ export const HistoricalGraph: React.FC<HistoricalGraphProps> = ({ data, unit }) 
                 Surf Wave Thresholds:
               </span>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-sunset-600 rounded"></span>
-                <span className="text-sunset-700 font-semibold font-mono text-[11px]">
+                <span className="w-3 h-0.5 bg-firing-600 rounded"></span>
+                <span className="text-firing-700 font-semibold font-mono text-[11px]">
                   &ge; {unit === "metric" ? "22.7 m³/s" : "800 CFS"} (Firing)
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-sky-600 rounded"></span>
-                <span className="text-sky-700 font-semibold font-mono text-[11px]">
-                  {unit === "metric" ? "18.4–22.7 m³/s" : "650–800 CFS"} (Surfing)
+                <span className="w-3 h-0.5 bg-optimal-600 rounded"></span>
+                <span className="text-optimal-700 font-semibold font-mono text-[11px]">
+                  {unit === "metric" ? "18.4–22.7 m³/s" : "650–800 CFS"} (Optimal)
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-emerald-600 rounded"></span>
-                <span className="text-emerald-700 font-semibold font-mono text-[11px]">
+                <span className="w-3 h-0.5 bg-lowsurf-600 rounded"></span>
+                <span className="text-lowsurf-800 font-semibold font-mono text-[11px]">
                   {unit === "metric" ? "15.6–18.4 m³/s" : "550–650 CFS"} (Low-Surfable)
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-slate-400 rounded"></span>
-                <span className="text-slate-600 font-medium font-mono text-[11px]">
+                <span className="w-3 h-0.5 bg-belowrec-400 rounded"></span>
+                <span className="text-belowrec-600 font-medium font-mono text-[11px]">
                   &lt; {unit === "metric" ? "15.6 m³/s" : "550 CFS"} (Below Recommended)
                 </span>
               </div>

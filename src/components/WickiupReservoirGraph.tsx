@@ -220,8 +220,8 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
 
   // Data for Donut Chart
   const pieData = [
-    { name: "Current Storage", value: currentAf, color: "#256b6e" },
-    { name: "Available Capacity", value: emptySpaceAf, color: "#e4dac6" },
+    { name: "Current Storage", value: currentAf, color: "#4a6785" },
+    { name: "Available Capacity", value: emptySpaceAf, color: "#e7decb" },
   ];
 
   // Min and max for line graph axis
@@ -490,19 +490,19 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
             >
               <defs>
                 <linearGradient id="wickiupStorageGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#256b6e" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#256b6e" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#4a6785" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#4a6785" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3ede0" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4ede0" />
 
               <XAxis
                 dataKey="displayLabel"
-                stroke="#736c60"
+                stroke="#6c7080"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: "#e4dac6" }}
+                axisLine={{ stroke: "#e7decb" }}
                 interval={tickInterval}
                 dy={8}
               />
@@ -510,10 +510,10 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
               <YAxis
                 yAxisId="afAxis"
                 domain={[yDomainMin, yDomainMax]}
-                stroke="#736c60"
+                stroke="#6c7080"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: "#e4dac6" }}
+                axisLine={{ stroke: "#e7decb" }}
                 tickFormatter={(val) => {
                   if (unit === "metric") {
                     return `${(val * 0.00123348).toFixed(1)}M`;
@@ -530,7 +530,7 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
                   parseFloat(((yDomainMin / capacityAf) * 100).toFixed(1)),
                   parseFloat(((yDomainMax / capacityAf) * 100).toFixed(1)),
                 ]}
-                stroke="#a39a89"
+                stroke="#a29f99"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -544,12 +544,12 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
                 <ReferenceLine
                   yAxisId="afAxis"
                   y={200000}
-                  stroke="#256b6e"
+                  stroke="#4a6785"
                   strokeDasharray="4 4"
                   label={{
                     value: "Full Capacity: 200,000 AF (100%)",
                     position: "insideTopRight",
-                    fill: "#256b6e",
+                    fill: "#4a6785",
                     fontSize: 11,
                     fontWeight: 600,
                   }}
@@ -576,7 +576,7 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
                 type="monotone"
                 dataKey="acreFeet"
                 name="Storage (AF)"
-                stroke="#256b6e"
+                stroke="#4a6785"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#wickiupStorageGradient)"

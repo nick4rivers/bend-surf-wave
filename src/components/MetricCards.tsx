@@ -93,12 +93,12 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                 Bend Surf Wave is{" "}
                 <span className={`font-semibold ${
                   flowCfs >= 800
-                    ? "text-sunset-400"
+                    ? "text-firing-300"
                     : flowCfs >= 650
-                    ? "text-sky-300"
+                    ? "text-optimal-300"
                     : flowCfs >= 550
-                    ? "text-emerald-300"
-                    : "text-slate-300"
+                    ? "text-lowsurf-300"
+                    : "text-belowrec-300"
                 }`}>
                   {current.statusLabel.toUpperCase()}
                 </span>
@@ -432,22 +432,22 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               <div className="h-3.5 w-full rounded-full bg-slate-100 flex overflow-hidden shadow-inner border border-slate-200/60">
                 <div
                   style={{ width: `${belowMinPct}%` }}
-                  className="bg-slate-400 border-r border-white/90 transition-all duration-300"
+                  className="bg-belowrec-500 border-r border-white/90 transition-all duration-300"
                   title={`${minScale}–${threshMin} CFS: Below Recommended`}
                 />
                 <div
                   style={{ width: `${lowSurfPct}%` }}
-                  className="bg-emerald-400 border-r border-white/90 transition-all duration-300"
+                  className="bg-lowsurf-400 border-r border-white/90 transition-all duration-300"
                   title={`${threshMin}–${threshSurf} CFS: Low-Surfable`}
                 />
                 <div
                   style={{ width: `${surfingPct}%` }}
-                  className="bg-sky-500 border-r border-white/90 transition-all duration-300"
-                  title={`${threshSurf}–${threshFiring} CFS: Surfing`}
+                  className="bg-optimal-500 border-r border-white/90 transition-all duration-300"
+                  title={`${threshSurf}–${threshFiring} CFS: Optimal`}
                 />
                 <div
                   style={{ width: `${firingPct}%` }}
-                  className="bg-sunset-500 transition-all duration-300"
+                  className="bg-firing-500 transition-all duration-300"
                   title={`${threshFiring}+ CFS: Firing`}
                 />
               </div>
@@ -467,21 +467,21 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               <div className="relative w-full h-4 mt-1.5 text-[10px] font-mono text-slate-400 select-none">
                 <span className="absolute left-0">300</span>
                 <span
-                  className="absolute -translate-x-1/2 text-slate-600 font-semibold"
+                  className="absolute -translate-x-1/2 text-belowrec-600 font-semibold"
                   style={{ left: `${belowMinPct}%` }}
                   title="Below Recommended (< 550 CFS)"
                 >
                   550
                 </span>
                 <span
-                  className="absolute -translate-x-1/2 text-emerald-700 font-semibold"
+                  className="absolute -translate-x-1/2 text-lowsurf-800 font-semibold"
                   style={{ left: `${belowMinPct + lowSurfPct}%` }}
-                  title="Surfing threshold (650 CFS)"
+                  title="Optimal threshold (650 CFS)"
                 >
                   650
                 </span>
                 <span
-                  className="absolute -translate-x-1/2 text-sunset-600 font-semibold"
+                  className="absolute -translate-x-1/2 text-firing-600 font-semibold"
                   style={{ left: `${belowMinPct + lowSurfPct + surfingPct}%` }}
                   title="Firing threshold (800+ CFS)"
                 >
@@ -499,16 +499,16 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
           <div className={`p-3.5 rounded-lg border transition-all ${
             inBand(0, 550)
-              ? "bg-slate-100 border-slate-300 ring-2 ring-slate-400/30"
+              ? "bg-belowrec-50 border-belowrec-300 ring-2 ring-belowrec-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
-            <div className="flex items-center justify-between font-bold text-slate-600">
+            <div className="flex items-center justify-between font-bold text-belowrec-600">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                <span className="w-2 h-2 rounded-full bg-belowrec-500" />
                 &lt; 550 CFS
               </span>
               {inBand(0, 550) && (
-                <span className="text-[9px] bg-slate-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                <span className="text-[9px] bg-belowrec-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
               )}
@@ -521,16 +521,16 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
           <div className={`p-3.5 rounded-lg border transition-all ${
             inBand(550, 650)
-              ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/30"
+              ? "bg-lowsurf-50 border-lowsurf-300 ring-2 ring-lowsurf-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
-            <div className="flex items-center justify-between font-bold text-emerald-700">
+            <div className="flex items-center justify-between font-bold text-lowsurf-800">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-lowsurf-500" />
                 550 – 650 CFS
               </span>
               {inBand(550, 650) && (
-                <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                <span className="text-[9px] bg-lowsurf-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
               )}
@@ -543,21 +543,21 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
           <div className={`p-3.5 rounded-lg border transition-all ${
             inBand(650, 800)
-              ? "bg-sky-50 border-sky-300 ring-2 ring-sky-400/30"
+              ? "bg-optimal-50 border-optimal-300 ring-2 ring-optimal-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
-            <div className="flex items-center justify-between font-bold text-sky-600">
+            <div className="flex items-center justify-between font-bold text-optimal-600">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-sky-500" />
+                <span className="w-2 h-2 rounded-full bg-optimal-500" />
                 650 – 800 CFS
               </span>
               {inBand(650, 800) && (
-                <span className="text-[9px] bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                <span className="text-[9px] bg-optimal-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
               )}
             </div>
-            <p className="text-slate-900 font-bold text-sm mt-1">Surfing</p>
+            <p className="text-slate-900 font-bold text-sm mt-1">Optimal</p>
             <p className="text-slate-600 text-[11px] mt-1 leading-snug">
               Wave is in great shape and surfing well, contact with concrete and rocks unlikely.
             </p>
@@ -565,22 +565,22 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
           <div className={`p-3.5 rounded-lg border transition-all ${
             inBand(800)
-              ? "bg-sunset-50 border-sunset-300 ring-2 ring-sunset-400/30"
+              ? "bg-firing-50 border-firing-300 ring-2 ring-firing-400/30"
               : "bg-slate-50 border-slate-200"
           }`}>
-            <div className="flex items-center justify-between font-bold text-sunset-700">
+            <div className="flex items-center justify-between font-bold text-firing-700">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-sunset-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-firing-500 animate-pulse" />
                 800+ CFS
               </span>
               {inBand(800) && (
-                <span className="text-[9px] bg-sunset-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                <span className="text-[9px] bg-firing-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">
                   ACTIVE
                 </span>
               )}
             </div>
-            <p className="text-sunset-950 font-bold text-sm mt-1">Firing</p>
-            <p className="text-sunset-800 text-[11px] mt-1 leading-snug">
+            <p className="text-firing-950 font-bold text-sm mt-1">Firing</p>
+            <p className="text-firing-800 text-[11px] mt-1 leading-snug">
               Wave is steep and fast, bring your performance river surfboard.
             </p>
           </div>

@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 /*
- * "High Desert" skin.
- * The components keep their existing slate / sky / emerald utility classes; this theme
- * remaps those palettes so the whole site reskins without layout changes:
- *   slate   -> sand-to-basalt warm neutrals (page, cards, text, dark panels)
- *   sky     -> snowmelt teal (primary accent, "Surfing")
- *   emerald -> sagebrush green ("Low-Surfable", Lowers, positive states)
+ * Site skin: "Shop Sign" general palette + a separate flow-rating scale.
+ *
+ * General UI (components keep their existing utility classes; the theme remaps them):
+ *   slate   -> cream-to-navy neutrals (page, cards, text, dark header/hero panels)
+ *   sky     -> steel blue (primary accent: buttons, links, active tab, main flow line)
+ *   emerald -> sage (Lowers, LIVE badge, positive states)
+ *   honey   -> new; the "REPORT" wordmark
  *   indigo, blue -> glacier and deep-lake blues ("Cool" and "Cold" water)
- *   sunset  -> new ramp for "Firing" and the header wordmark
+ *
+ * Flow ratings get their own ramps, good to poor, used only for rating UI:
+ *   firing (800+) blue · optimal (650–800) green · lowsurf (550–650) mustard · belowrec (<550) brick
+ *
  * amber / rose / purple etc. keep Tailwind's defaults for warnings, errors and charts.
  */
 @theme {
@@ -21,43 +25,54 @@
 
   --color-white: #fffdf8;
 
-  --color-slate-50: #fbf7ee;
-  --color-slate-100: #f3ede0;
-  --color-slate-200: #e4dac6;
-  --color-slate-300: #cfc4ad;
-  --color-slate-400: #a39a89;
-  --color-slate-500: #736c60;
-  --color-slate-600: #5e5a52;
-  --color-slate-700: #46433d;
-  --color-slate-800: #383633;
-  --color-slate-900: #2b2a28;
-  --color-slate-950: #1f1e1c;
+  --color-slate-50: #faf6ee;
+  --color-slate-100: #f4ede0;
+  --color-slate-200: #e7decb;
+  --color-slate-300: #d1c8b5;
+  --color-slate-400: #a29f99;
+  --color-slate-500: #6c7080;
+  --color-slate-600: #535a6b;
+  --color-slate-700: #3c4459;
+  --color-slate-800: #2a3450;
+  --color-slate-900: #1f2a44;
+  --color-slate-950: #161e33;
 
-  --color-sky-50: #eaf4f2;
-  --color-sky-100: #d3e9e6;
-  --color-sky-200: #a9d4cf;
-  --color-sky-300: #8fd0cc;
-  --color-sky-400: #5fb2ad;
-  --color-sky-500: #2f8783;
-  --color-sky-600: #256b6e;
-  --color-sky-700: #1e5a5c;
-  --color-sky-800: #1b4b4d;
-  --color-sky-900: #183e40;
-  --color-sky-950: #0f2a2b;
+  --color-sky-50: #eef2f6;
+  --color-sky-100: #dce4ec;
+  --color-sky-200: #bacada;
+  --color-sky-300: #9db5cc;
+  --color-sky-400: #7f9dba;
+  --color-sky-500: #5b7a99;
+  --color-sky-600: #4a6785;
+  --color-sky-700: #3d5570;
+  --color-sky-800: #33465c;
+  --color-sky-900: #2b3a4c;
+  --color-sky-950: #1c2633;
 
-  --color-emerald-50: #f0f3ea;
-  --color-emerald-100: #e1e8d6;
-  --color-emerald-200: #c9d4b6;
-  --color-emerald-300: #b9c8a2;
-  --color-emerald-400: #a3ae8f;
-  --color-emerald-500: #7d8f62;
-  --color-emerald-600: #5f7049;
-  --color-emerald-700: #4e5c3c;
-  --color-emerald-800: #3f4a31;
-  --color-emerald-900: #343d29;
-  --color-emerald-950: #1d2317;
+  --color-emerald-50: #f1f4ee;
+  --color-emerald-100: #e3e9dd;
+  --color-emerald-200: #cbd6c1;
+  --color-emerald-300: #b3c3a6;
+  --color-emerald-400: #9aae8c;
+  --color-emerald-500: #7f9571;
+  --color-emerald-600: #66795a;
+  --color-emerald-700: #536249;
+  --color-emerald-800: #434f3c;
+  --color-emerald-900: #384232;
+  --color-emerald-950: #1f251b;
 
-  /* Cool-water tones for the "Cool" / "Cold" water temperature tiers */
+  --color-honey-50: #fcf6e9;
+  --color-honey-100: #f8edd7;
+  --color-honey-200: #f1ddb6;
+  --color-honey-300: #eacc93;
+  --color-honey-400: #e2ba6f;
+  --color-honey-500: #d9a441;
+  --color-honey-600: #bb8e3b;
+  --color-honey-700: #9d7935;
+  --color-honey-800: #7f632f;
+  --color-honey-900: #645029;
+  --color-honey-950: #423822;
+
   --color-indigo-50: #edf3f6;
   --color-indigo-100: #d8e6ec;
   --color-indigo-200: #b3cdd9;
@@ -82,17 +97,54 @@
   --color-blue-900: #27354b;
   --color-blue-950: #18202e;
 
-  --color-sunset-50: #fcf0e9;
-  --color-sunset-100: #f8dccb;
-  --color-sunset-200: #f1bb9c;
-  --color-sunset-300: #eb9f78;
-  --color-sunset-400: #e8875a;
-  --color-sunset-500: #d9693a;
-  --color-sunset-600: #c2552a;
-  --color-sunset-700: #a04422;
-  --color-sunset-800: #80371f;
-  --color-sunset-900: #66301d;
-  --color-sunset-950: #381609;
+  /* Flow rating scale */
+  --color-firing-50: #edf0f2;
+  --color-firing-100: #d7e1ea;
+  --color-firing-200: #b3d0f2;
+  --color-firing-300: #7fb0ea;
+  --color-firing-400: #4f8ad0;
+  --color-firing-500: #1f5fa8;
+  --color-firing-600: #1d5492;
+  --color-firing-700: #1a487d;
+  --color-firing-800: #183d67;
+  --color-firing-900: #163454;
+  --color-firing-950: #14273c;
+
+  --color-optimal-50: #eff4eb;
+  --color-optimal-100: #dce9db;
+  --color-optimal-200: #b8d5bd;
+  --color-optimal-300: #93c09e;
+  --color-optimal-400: #6baa7e;
+  --color-optimal-500: #3a8f55;
+  --color-optimal-600: #347d4c;
+  --color-optimal-700: #2d6a43;
+  --color-optimal-800: #27583a;
+  --color-optimal-900: #224832;
+  --color-optimal-950: #1a3327;
+
+  --color-lowsurf-50: #fdf6e7;
+  --color-lowsurf-100: #f9edd2;
+  --color-lowsurf-200: #f4ddac;
+  --color-lowsurf-300: #eecd84;
+  --color-lowsurf-400: #e8bb5a;
+  --color-lowsurf-500: #e0a526;
+  --color-lowsurf-600: #c18f24;
+  --color-lowsurf-700: #a27922;
+  --color-lowsurf-800: #826420;
+  --color-lowsurf-900: #67511e;
+  --color-lowsurf-950: #44381c;
+
+  --color-belowrec-50: #faeee8;
+  --color-belowrec-100: #f4dbd4;
+  --color-belowrec-200: #e9b9b0;
+  --color-belowrec-300: #dd9689;
+  --color-belowrec-400: #d17061;
+  --color-belowrec-500: #c2412f;
+  --color-belowrec-600: #a73a2c;
+  --color-belowrec-700: #8d3428;
+  --color-belowrec-800: #722d25;
+  --color-belowrec-900: #5b2722;
+  --color-belowrec-950: #3c1f1e;
 }
 
 @layer base {
