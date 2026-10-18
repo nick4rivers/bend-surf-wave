@@ -236,8 +236,8 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
             <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4a6785" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#4a6785" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#377498" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#377498" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
 
@@ -323,24 +323,24 @@ export const FlowGraph: React.FC<FlowGraphProps> = ({ data, unit }) => {
               <Area
                 type="monotone"
                 dataKey={unit === "metric" ? "flowMetric" : "cfs"}
-                stroke="#4a6785"
+                stroke="#377498"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#flowGradient)"
-                activeDot={{ r: 5, fill: "#4a6785", stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: "#377498", stroke: "#ffffff", strokeWidth: 2 }}
               />
 
               {/* Modeled outlook: flow already between Benham Falls and the park */}
               <Area
                 type="monotone"
                 dataKey={unit === "metric" ? "forecastMetric" : "forecastCfs"}
-                stroke="#4a6785"
+                stroke="#377498"
                 strokeWidth={2}
                 strokeDasharray="5 4"
                 fill="none"
                 connectNulls={false}
                 isAnimationActive={false}
-                activeDot={{ r: 4, fill: "#ffffff", stroke: "#4a6785", strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: "#ffffff", stroke: "#377498", strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

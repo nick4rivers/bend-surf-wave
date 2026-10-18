@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Bend Surf Report</title>
+  <path d="M0,-30 C7,-24 11,-10 11,4 C11,16 10,24 9,29 L0,21 L-9,29 C-10,24 -11,16 -11,4 C-11,-10 -7,-24 0,-30 Z" transform="translate(32,32) scale(0.98)" fill="#1f2a44" stroke="#e6ad3c" stroke-width="3" stroke-linejoin="round"/>
+  <polyline points="23,25 28,17 31,21 34,16 41,25" fill="none" stroke="#f4ede0" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M22,40 C25,37 28,37 31,40 S37,43 42,39" fill="none" stroke="#93c1dc" stroke-width="2.6" stroke-linecap="round"/>
+</svg>

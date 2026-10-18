@@ -596,7 +596,7 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {showRef62 && (
                 <ReferenceLine
                   y={ref62Val}
-                  stroke="#66795a"
+                  stroke="#698b54"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
@@ -611,12 +611,12 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
               {showRef58 && (
                 <ReferenceLine
                   y={ref58Val}
-                  stroke="#4a6785"
+                  stroke="#377498"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
                     value: "58°F — Comfortable",
-                    fill: "#3d5570",
+                    fill: "#306583",
                     fontSize: 10,
                     fontWeight: 600,
                     position: "insideTopRight",
@@ -644,10 +644,10 @@ export const TempGraph: React.FC<TempGraphProps> = ({ data, unit, isOverview = f
                 type="monotone"
                 dataKey="displayWater"
                 name="Water Temperature"
-                stroke="#4a6785"
+                stroke="#377498"
                 strokeWidth={3}
                 dot={false}
-                activeDot={{ r: 5, fill: "#4a6785", stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: "#377498", stroke: "#ffffff", strokeWidth: 2 }}
               />
 
               {/* Air Temp Line - Distinct amber/orange dashed line with high contrast against reference lines */}

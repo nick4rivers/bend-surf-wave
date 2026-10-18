@@ -214,11 +214,11 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
+                    ? "bg-sky-500/35 text-sky-100 border border-sky-400/70 shadow-sm"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
                 }`}
               >
-                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-sky-400" : "text-slate-400"}`} />
+                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-sky-200" : "text-slate-400"}`} />
                 {tab.label}
               </button>
             );

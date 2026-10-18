@@ -386,7 +386,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
                   type="monotone"
                   dataKey="displayHeadOfPark"
                   name="Head of Park (Green Wave)"
-                  stroke="#66795a"
+                  stroke="#698b54"
                   strokeWidth={3}
                   dot={false}
                 />
@@ -397,7 +397,7 @@ export const HydroNetworkGraph: React.FC<HydroNetworkProps> = ({ data, unit }) =
                   type="monotone"
                   dataKey="displayBenham"
                   name="Benham Falls"
-                  stroke="#4a6785"
+                  stroke="#377498"
                   strokeWidth={2}
                   dot={false}
                 />

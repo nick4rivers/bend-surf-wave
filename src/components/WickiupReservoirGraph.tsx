@@ -220,7 +220,7 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
 
   // Data for Donut Chart
   const pieData = [
-    { name: "Current Storage", value: currentAf, color: "#4a6785" },
+    { name: "Current Storage", value: currentAf, color: "#377498" },
     { name: "Available Capacity", value: emptySpaceAf, color: "#e7decb" },
   ];
 
@@ -490,8 +490,8 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
             >
               <defs>
                 <linearGradient id="wickiupStorageGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4a6785" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#4a6785" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#377498" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#377498" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
 
@@ -544,12 +544,12 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
                 <ReferenceLine
                   yAxisId="afAxis"
                   y={200000}
-                  stroke="#4a6785"
+                  stroke="#377498"
                   strokeDasharray="4 4"
                   label={{
                     value: "Full Capacity: 200,000 AF (100%)",
                     position: "insideTopRight",
-                    fill: "#4a6785",
+                    fill: "#377498",
                     fontSize: 11,
                     fontWeight: 600,
                   }}
@@ -576,7 +576,7 @@ export const WickiupReservoirGraph: React.FC<WickiupReservoirGraphProps> = ({
                 type="monotone"
                 dataKey="acreFeet"
                 name="Storage (AF)"
-                stroke="#4a6785"
+                stroke="#377498"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#wickiupStorageGradient)"
