@@ -154,11 +154,8 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
   ] = await Promise.allSettled([
     fetchHydrometInstant(["wico q", "beno q", "beno wf", "lapo q", "ceno qc", "arno qc", "debo q"], { start: recentStart }),
     fetchHydrometDaily(["beno qd", "ceno qj", "arno qj"], yearStart, yesterday),
-    // Never let the 13-year archive hold up live data; it's cached for a day once it loads
-    Promise.race([
-      getHistoricalByYear(2013, eyer - 1),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("historical archive timeout")), 8000)),
-    ]),
+    // 13-year archive: cached for a day once it loads; fetchUrl's deadline keeps it from holding up live data
+    getHistoricalByYear(2013, eyer - 1),
     fetchUrl("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=14070500,14092500,13206000&parameterCd=00060,00010"),
     fetchUrl("https://api.open-meteo.com/v1/forecast?latitude=44.0582&longitude=-121.3153&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&past_days=92&forecast_days=7"),
     process.env.PURPLE_AIR_API_KEY
