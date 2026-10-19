@@ -165,7 +165,8 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
       ? fetchUrl(`https://api.purpleair.com/v1/sensors/61853?api_key=${process.env.PURPLE_AIR_API_KEY}`)
       : fetchUrl("https://map.purpleair.com/data.json?opt=1/m/i/pm25_10m/a10/c0&box=44.00,-121.36,44.10,-121.26"),
     fetchUrl("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=44.0504&longitude=-121.3216&current=us_aqi,pm2_5,pm10,ozone,carbon_monoxide&timezone=America%2FLos_Angeles"),
-    fetchUrl("https://www.usbr.gov/pn-bin/v1/instant.pl?list=wic%20af&format=realtime-graph"),
+    // Standard 15-min CSV ("YYYY-MM-DD HH:MM,af"). The format=realtime-graph feed froze on 2026-10-12.
+    fetchUrl("https://www.usbr.gov/pn-bin/v1/instant.pl?list=wic%20af&back=24&format=csv"),
     fetchUrl(usbr1YrDailyUrl),
   ]);
 
@@ -255,11 +256,26 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     "the USBR Hydromet flow gage at Benham Falls"
   );
   // The estimate subtracts the canal diversions; without them it would overstate park flow by
-  // hundreds of CFS in irrigation season. Canals report less often (ARNO is often late), so
-  // allow 12 h before calling them down.
+  // hundreds of CFS in irrigation season. A canal counts as accounted for when:
+  //   1. it has reported within 12 h (ARNO often reports late), or
+  //   2. its last reading was ~0 cfs: the canal was shut off, and Hydromet canal gages often stop
+  //      posting after shutdown (CENO went blank on 2026-10-18 after ramping to 0.02 cfs), or
+  //   3. it has no readings in the whole 35-day window during the off-season (Nov–Mar): it has
+  //      been shut off for weeks and its last ~0 reading has aged out of the window.
+  // A canal that goes quiet while still diverting real water is still treated as down.
   if (flowStatus.available) {
-    const canalStatus = [feedStatus(lastFinite(col(4)), "x", 12), feedStatus(lastFinite(col(5)), "x", 12)];
-    if (canalStatus.some((c) => !c.available)) {
+    const CANAL_OFF_CFS = 5;
+    const pacificMonth = +pacificToday().slice(5, 7);
+    const offSeason = pacificMonth >= 11 || pacificMonth <= 3;
+    const canalAccountedFor = (i: number) => {
+      const vals = col(i);
+      const lastDate = lastFinite(vals);
+      if (!lastDate) return offSeason;
+      if (feedStatus(lastDate, "x", 12).available) return true;
+      const lastVal = [...vals].reverse().find((v) => Number.isFinite(v)) as number;
+      return lastVal <= CANAL_OFF_CFS;
+    };
+    if (![4, 5].every(canalAccountedFor)) {
       flowStatus = {
         available: false,
         stale: false,
@@ -343,9 +359,11 @@ export async function getSurfReportData(): Promise<SurfDataResponse> {
     }
   }
 
-  // Newest real storage value: the 15-min reading if present, else the last daily value
+  // Newest real storage value: whichever of the 15-min reading and the last daily value is more recent
   const lastDaily = dailyHistory[dailyHistory.length - 1];
-  const latestStorage = instantAf ?? (lastDaily ? { af: lastDaily.acreFeet, date: `${lastDaily.date} 00:00` } : null);
+  const dailyLatest = lastDaily ? { af: lastDaily.acreFeet, date: `${lastDaily.date} 00:00` } : null;
+  const latestStorage =
+    instantAf && (!dailyLatest || instantAf.date >= dailyLatest.date) ? instantAf : dailyLatest ?? instantAf;
   // Storage changes slowly and daily values post a day late, so allow 48 h before calling it stale
   const wickiupStatus = feedStatus(latestStorage?.date ?? null, "the USBR Hydromet Wickiup Reservoir gage", 48);
 
